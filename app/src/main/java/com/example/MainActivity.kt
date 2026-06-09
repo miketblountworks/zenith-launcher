@@ -1,142 +1,199 @@
 package com.example
 
-import android.appwidget.AppWidgetHost
-import com.example.widgets.CustomAppWidgetHost
 import android.appwidget.AppWidgetManager
-import android.appwidget.AppWidgetHostView
-import android.view.MotionEvent
-import android.view.Choreographer
-import android.view.ViewConfiguration
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.compose.animation.core.animateDpAsState
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.BitmapFactory
 import android.graphics.drawable.Drawable
-import android.graphics.Rect
 import android.os.Bundle
+import android.view.Choreographer
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.activity.compose.BackHandler
-import androidx.compose.ui.zIndex
+import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.core.view.WindowCompat
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
-import androidx.compose.foundation.gestures.detectTransformGestures
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInWindow
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import kotlin.math.abs
-import kotlin.math.roundToInt
-import androidx.compose.material3.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.AccountBox
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.SkipNext
-import androidx.compose.material.icons.filled.SkipPrevious
-import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material.icons.filled.Build
-import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.*
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.*
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.TransformOrigin
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.SuggestionChip
+import androidx.compose.material3.SuggestionChipDefaults
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.graphics.Shadow
-import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.takeOrElse
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.zIndex
+import androidx.core.view.WindowCompat
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
 import com.example.ui.theme.MyApplicationTheme
+import com.example.widgets.CustomAppWidgetHost
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import androidx.compose.ui.layout.ContentScale
+import kotlin.math.abs
+import kotlin.math.roundToInt
 
 data class WidgetData(val id: Int, val widthSpan: Int = 4, val heightSpan: Int = 2, val pageName: String = "", val revision: Int = 0)
 
@@ -182,7 +239,7 @@ class MainActivity : ComponentActivity() {
     
     fun saveActivePages(pages: List<String>) {
         activePages.value = pages
-        getSharedPreferences("launcher_settings", Context.MODE_PRIVATE)
+        getSharedPreferences("launcher_settings", MODE_PRIVATE)
             .edit()
             .putString("active_pages", pages.joinToString(","))
             .apply()
@@ -223,7 +280,7 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             isAIGenerating.value = true
             try {
-                val locationManager = getSystemService(Context.LOCATION_SERVICE) as android.location.LocationManager
+                val locationManager = getSystemService(LOCATION_SERVICE) as android.location.LocationManager
                 val location = locationManager.getLastKnownLocation(android.location.LocationManager.NETWORK_PROVIDER) 
                                ?: locationManager.getLastKnownLocation(android.location.LocationManager.GPS_PROVIDER)
                 
@@ -247,7 +304,7 @@ class MainActivity : ComponentActivity() {
                 if (success) {
                     withContext(Dispatchers.Main) {
                         selectedWallpaper.value = "AI Generated Location"
-                        getSharedPreferences("launcher_settings", Context.MODE_PRIVATE)
+                        getSharedPreferences("launcher_settings", MODE_PRIVATE)
                             .edit()
                             .putString("wallpaper", "AI Generated Location")
                             .apply()
@@ -329,7 +386,7 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                     selectedWallpaper.value = "Local Image"
-                    getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit().putString("wallpaper", "Local Image").apply()
+                    getSharedPreferences("launcher_settings", MODE_PRIVATE).edit().putString("wallpaper", "Local Image").apply()
                     decodeAndExtractWallpaperColor()
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -371,7 +428,7 @@ class MainActivity : ComponentActivity() {
                     withContext(Dispatchers.Main) {
                         bingWallpaperUrl.value = fullUrl
                         selectedWallpaper.value = "Bing Daily"
-                        getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit()
+                        getSharedPreferences("launcher_settings", MODE_PRIVATE).edit()
                             .putString("bing_wallpaper_url", fullUrl)
                             .putString("wallpaper", "Bing Daily")
                             .apply()
@@ -384,7 +441,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    val isAIGeneratingImage = kotlinx.coroutines.flow.MutableStateFlow(false)
+    val isAIGeneratingImage = MutableStateFlow(false)
 
     fun generateStableDiffusionWallpaper(prompt: String) {
         if (prompt.isBlank()) return
@@ -396,7 +453,7 @@ class MainActivity : ComponentActivity() {
             if (success) {
                 withContext(Dispatchers.Main) {
                     selectedWallpaper.value = "AI Generated"
-                    getSharedPreferences("launcher_settings", Context.MODE_PRIVATE)
+                    getSharedPreferences("launcher_settings", MODE_PRIVATE)
                         .edit()
                         .putString("wallpaper", "AI Generated")
                         .apply()
@@ -533,7 +590,7 @@ class MainActivity : ComponentActivity() {
     fun registerThermalListener() {
         try {
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                val powerManager = getSystemService(Context.POWER_SERVICE) as? android.os.PowerManager
+                val powerManager = getSystemService(POWER_SERVICE) as? android.os.PowerManager
                 powerManager?.addThermalStatusListener(mainExecutor) { status ->
                     val statusStr = when (status) {
                         android.os.PowerManager.THERMAL_STATUS_NONE -> "Cool (Optimized)"
@@ -692,14 +749,14 @@ class MainActivity : ComponentActivity() {
 
     private fun saveWidgets(list: List<WidgetData>) {
         val str = list.joinToString(",") { "${it.id}:${it.widthSpan}:${it.heightSpan}:${it.pageName}" }
-        getSharedPreferences("launcher", Context.MODE_PRIVATE).edit()
+        getSharedPreferences("launcher", MODE_PRIVATE).edit()
             .putString("widgets_v2", str)
             .apply()
     }
 
     fun hasUsageStatsPermission(context: Context): Boolean {
         return try {
-            val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as android.app.AppOpsManager
+            val appOps = context.getSystemService(APP_OPS_SERVICE) as android.app.AppOpsManager
             val mode = appOps.noteOpNoThrow(
                 android.app.AppOpsManager.OPSTR_GET_USAGE_STATS,
                 android.os.Process.myUid(),
@@ -715,7 +772,7 @@ class MainActivity : ComponentActivity() {
     fun refreshAppUsageScores() {
         lifecycleScope.launch(Dispatchers.IO) {
             val scores = mutableMapOf<String, Long>()
-            val localPrefs = getSharedPreferences("launcher_local_launches", Context.MODE_PRIVATE)
+            val localPrefs = getSharedPreferences("launcher_local_launches", MODE_PRIVATE)
             val localKeys = localPrefs.all
             for ((pkg, value) in localKeys) {
                 val count = when (value) {
@@ -731,7 +788,7 @@ class MainActivity : ComponentActivity() {
             }
             if (hasUsageStatsPermission(this@MainActivity)) {
                 try {
-                    val usageStatsManager = getSystemService(Context.USAGE_STATS_SERVICE) as? android.app.usage.UsageStatsManager
+                    val usageStatsManager = getSystemService(USAGE_STATS_SERVICE) as? android.app.usage.UsageStatsManager
                     if (usageStatsManager != null) {
                         val cal = java.util.Calendar.getInstance()
                         cal.add(java.util.Calendar.DAY_OF_YEAR, -7)
@@ -760,7 +817,7 @@ class MainActivity : ComponentActivity() {
 
     fun incrementLocalLaunchCount(packageName: String) {
         lifecycleScope.launch(Dispatchers.IO) {
-            val prefs = getSharedPreferences("launcher_local_launches", Context.MODE_PRIVATE)
+            val prefs = getSharedPreferences("launcher_local_launches", MODE_PRIVATE)
             val current = prefs.getLong(packageName, 0L)
             prefs.edit().putLong(packageName, current + 1L).apply()
             refreshAppUsageScores()
@@ -897,7 +954,7 @@ class MainActivity : ComponentActivity() {
         
         val targetIconBounds = locateIconOnGrid(componentName)
         
-        val response = android.os.Bundle().apply {
+        val response = Bundle().apply {
             putParcelable("gesture_nav_contract_icon_position", android.graphics.RectF(
                 targetIconBounds.left.toFloat(),
                 targetIconBounds.top.toFloat(),
@@ -964,7 +1021,7 @@ class MainActivity : ComponentActivity() {
         }
         appWidgetHost.startListening()
         
-        val savedWidgetsV2 = getSharedPreferences("launcher", Context.MODE_PRIVATE).getString("widgets_v2", "") ?: ""
+        val savedWidgetsV2 = getSharedPreferences("launcher", MODE_PRIVATE).getString("widgets_v2", "") ?: ""
         if (savedWidgetsV2.isNotEmpty()) {
             _widgetDataList.value = savedWidgetsV2.split(",").mapNotNull { 
                 val parts = it.split(":")
@@ -977,13 +1034,13 @@ class MainActivity : ComponentActivity() {
                 } else null
             }
         } else {
-            val savedWidgets = getSharedPreferences("launcher", Context.MODE_PRIVATE).getString("widgets", "") ?: ""
+            val savedWidgets = getSharedPreferences("launcher", MODE_PRIVATE).getString("widgets", "") ?: ""
             if (savedWidgets.isNotEmpty()) {
                 _widgetDataList.value = savedWidgets.split(",").mapNotNull { it.toIntOrNull()?.let { id -> WidgetData(id) } }
             }
         }
 
-        val prefs = getSharedPreferences("launcher_settings", Context.MODE_PRIVATE)
+        val prefs = getSharedPreferences("launcher_settings", MODE_PRIVATE)
         selectedWallpaper.value = prefs.getString("wallpaper", "System Wallpaper") ?: "System Wallpaper"
         clockStyle.value = prefs.getString("clock_style", "Dextera Date") ?: "Dextera Date"
         selectedFont.value = prefs.getString("font", "System Default") ?: "System Default"
@@ -1406,7 +1463,7 @@ fun ClockStyleWidget(
                         fontFamily = fontFamily,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        textAlign = TextAlign.Center
                     )
                     
                     Row(
@@ -1461,7 +1518,7 @@ fun ClockStyleWidget(
                             Text(ampmSuffix, fontSize = 16.sp, fontFamily = fontFamily, fontWeight = FontWeight.SemiBold, color = Color.White.copy(alpha = 0.7f))
                         }
                     }
-                    Text(currentDate, fontSize = 11.sp, fontFamily = fontFamily, fontWeight = FontWeight.Light, color = Color.White.copy(alpha = 0.5f), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                    Text(currentDate, fontSize = 11.sp, fontFamily = fontFamily, fontWeight = FontWeight.Light, color = Color.White.copy(alpha = 0.5f), textAlign = TextAlign.Center)
                     Text(
                         text = if (useFahrenheit) {
                             if (isLocationGranted) "Local Weather · 70°F · Sunny" else "New York · 72°F · Partly Cloudy"
@@ -1472,7 +1529,7 @@ fun ClockStyleWidget(
                         fontFamily = fontFamily,
                         color = Color.White.copy(alpha = 0.45f),
                         modifier = Modifier.padding(top = 2.dp),
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        textAlign = TextAlign.Center
                     )
                 }
             }
@@ -1536,15 +1593,15 @@ fun ClockStyleWidget(
                 }
                 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("It's $hrWord $minText", fontSize = 16.sp, fontFamily = fontFamily, fontWeight = FontWeight.Bold, color = Color.White, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-                    Text("in the $ampm", fontSize = 13.sp, fontFamily = fontFamily, color = Color.White.copy(alpha = 0.6f), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-                    Text(currentDate, fontSize = 10.sp, fontFamily = fontFamily, color = primaryColor, letterSpacing = 1.sp, modifier = Modifier.padding(top = 1.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                    Text("It's $hrWord $minText", fontSize = 16.sp, fontFamily = fontFamily, fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.Center)
+                    Text("in the $ampm", fontSize = 13.sp, fontFamily = fontFamily, color = Color.White.copy(alpha = 0.6f), textAlign = TextAlign.Center)
+                    Text(currentDate, fontSize = 10.sp, fontFamily = fontFamily, color = primaryColor, letterSpacing = 1.sp, modifier = Modifier.padding(top = 1.dp), textAlign = TextAlign.Center)
                     Text(
                         text = if (useFahrenheit) "New York · 72°F · Partly Cloudy" else "New York · 22°C · Partly Cloudy",
                         fontSize = 10.sp,
                         fontFamily = fontFamily,
                         color = Color.White.copy(alpha = 0.5f),
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        textAlign = TextAlign.Center
                     )
                 }
             }
@@ -1655,7 +1712,7 @@ fun SwipableWidgetStack(fontFamily: FontFamily, primaryColor: Color) {
 }
 
 @Composable
-fun UsageBreakerOverlay(appName: String, icon: android.graphics.drawable.Drawable, onLaunch: () -> Unit, onClose: () -> Unit) {
+fun UsageBreakerOverlay(appName: String, icon: Drawable, onLaunch: () -> Unit, onClose: () -> Unit) {
     var timerSeconds by remember { mutableStateOf(5) }
     LaunchedEffect(Unit) {
         while (true) {
@@ -1671,8 +1728,8 @@ fun UsageBreakerOverlay(appName: String, icon: android.graphics.drawable.Drawabl
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Text("launcher wellbeing advisor", fontSize = 11.sp, color = Color.Gray, letterSpacing = 2.sp)
             Image(painter = rememberAsyncImagePainter(icon), contentDescription = "Wellbeing advisor for $appName", modifier = Modifier.size(64.dp))
-            Text("You have spent 45m on $appName today.", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-            Text("Take a mindful moment and take a deep breath.", fontSize = 13.sp, color = Color.White.copy(alpha = 0.7f), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            Text("You have spent 45m on $appName today.", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.Center)
+            Text("Take a mindful moment and take a deep breath.", fontSize = 13.sp, color = Color.White.copy(alpha = 0.7f), textAlign = TextAlign.Center)
             Box(modifier = Modifier.size(80.dp), contentAlignment = Alignment.Center) {
                 var scale by remember { mutableStateOf(0.9f) }
                 LaunchedEffect(Unit) {
@@ -2077,7 +2134,7 @@ fun AdvancedSearchBar(
     onFocusChanged: (Boolean) -> Unit,
     onSearchExecute: () -> Unit = {}
 ) {
-    val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
+    val focusManager = LocalFocusManager.current
     val mathResult = remember(query) { if (query.isNotEmpty()) evaluateMath(query) else "" }
     val isMath = mathResult != "Error" && mathResult != "Enter simple math (e.g. 15 * 6)" && query.any { it in "+-*/" }
     
@@ -2091,13 +2148,13 @@ fun AdvancedSearchBar(
     // Margins animate: 24dp unfocused to 12dp focused
     val horizontalMargin by animateDpAsState(
         targetValue = if (isSearchActive) 12.dp else 24.dp,
-        animationSpec = spring(dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy, stiffness = androidx.compose.animation.core.Spring.StiffnessLow)
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow)
     )
 
     // Corner radius animate: 28dp unfocused (full pill) to 16dp focused (rounded sheet)
     val cornerRadius by animateDpAsState(
         targetValue = if (isSearchActive) 16.dp else 28.dp,
-        animationSpec = spring(dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy, stiffness = androidx.compose.animation.core.Spring.StiffnessLow)
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow)
     )
 
     // Container background color: lightened glassmorphic style
@@ -2401,7 +2458,7 @@ fun FolderExpandCard(folderName: String, packages: List<String>, allApps: List<A
                                     maxLines = 1,
                                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                                     fontFamily = fontFamily,
-                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                    textAlign = TextAlign.Center,
                                     style = TextStyle(
                                         shadow = Shadow(
                                             color = Color.Black.copy(alpha = 0.5f),
@@ -2438,8 +2495,8 @@ fun UniversalAppContextMenu(
     onAddToFolder: (String) -> Unit,
     selectedFolders: Set<String> = emptySet()
 ) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+    val context = LocalContext.current
+    val haptic = LocalHapticFeedback.current
 
     // Background backdrop smooth fade matching isVisible state
     val bgAlpha by animateFloatAsState(
@@ -2542,11 +2599,11 @@ fun UniversalAppContextMenu(
                                 .fillMaxWidth()
                                 .clickable {
                                     try {
-                                        val intent = android.content.Intent(
+                                        val intent = Intent(
                                             android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
                                             android.net.Uri.parse("package:$packageName")
                                         ).apply {
-                                            addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                         }
                                         context.startActivity(intent)
                                     } catch (e: Exception) {
@@ -2699,7 +2756,7 @@ fun AppContextMenuOverlay(
         }
     }
 
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val context = LocalContext.current
     val activity = remember(context) {
         var cur = context
         while (cur is android.content.ContextWrapper) {
@@ -2922,7 +2979,7 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                                                                 activity.decodeAndExtractWallpaperColor()
                                                             }
                                                         }.padding(vertical = 12.dp), contentAlignment = Alignment.Center) {
-                                                            Text(wall.replace("Generated ", ""), fontSize = 11.sp, color = if (isSel) themeColor else MaterialTheme.colorScheme.onSurface, fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal, textAlign = androidx.compose.ui.text.style.TextAlign.Center, fontFamily = fontFamily)
+                                                            Text(wall.replace("Generated ", ""), fontSize = 11.sp, color = if (isSel) themeColor else MaterialTheme.colorScheme.onSurface, fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal, textAlign = TextAlign.Center, fontFamily = fontFamily)
                                                         }
                                                     }
                                                 }
@@ -2945,8 +3002,8 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                                                     }
                                                 }
                                             }
-                                            
-                                            androidx.compose.material3.HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+                                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                                             
                                             Row(
                                                 modifier = Modifier.fillMaxWidth(),
@@ -3020,8 +3077,8 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                                                     Text("Generate Auto Location Landscape", fontSize = 12.sp, color = themeColor, fontWeight = FontWeight.Bold, fontFamily = fontFamily)
                                                 }
                                             }
-                                            
-                                            androidx.compose.material3.HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+                                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                                             
                                             androidx.compose.foundation.text.BasicTextField(
                                                 value = sdPrompt,
@@ -3071,7 +3128,7 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                                                 }
                                             }
 
-                                            androidx.compose.material3.HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
                                             // App Icon Packs
                                             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -3086,7 +3143,7 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                                                 }
                                             }
 
-                                            androidx.compose.material3.HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
                                             // Launcher Fonts
                                             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -3131,7 +3188,7 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                                                 }
                                             }
 
-                                            androidx.compose.material3.HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
                                             // Climate Format
                                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -3179,7 +3236,7 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                                                 )
                                             }
 
-                                            androidx.compose.material3.HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
                                             // Material You
                                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -3235,8 +3292,8 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                                                     )
                                                 }
                                             }
-                                            
-                                            androidx.compose.material3.HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                                             
                                             Row(
                                                 modifier = Modifier.fillMaxWidth(),
@@ -3360,8 +3417,8 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                                             options.forEach { (_, itemData) ->
                                                 val (title, description, rawState) = itemData
                                                 val (checked, onCheckedChange) = rawState
-                                                
-                                                androidx.compose.material3.HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                                                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                                                 Row(
                                                     modifier = Modifier.fillMaxWidth(),
                                                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -3428,7 +3485,7 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                                                         Text("Launches search input immediately", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontFamily = fontFamily)
                                                     }
                                                 }
-                                                androidx.compose.material3.HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                                                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                                     Text("✌️", fontSize = 16.sp, modifier = Modifier.padding(end = 8.dp))
                                                     Column {
@@ -3436,7 +3493,7 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                                                         Text("Locks system screen visually/ambiently", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontFamily = fontFamily)
                                                     }
                                                 }
-                                                androidx.compose.material3.HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                                                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                                     Text("👌", fontSize = 16.sp, modifier = Modifier.padding(end = 8.dp))
                                                     Column {
@@ -3502,7 +3559,7 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                                             }
 
                                             if (notificationSummaryEnabledVal) {
-                                                androidx.compose.material3.HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                                                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                                                 Column(
                                                     modifier = Modifier
                                                         .fillMaxWidth()
@@ -3642,7 +3699,7 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                                             }
 
                                             if (categoriseByUsageVal) {
-                                                androidx.compose.material3.HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                                                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                                                 Text("Number of Frequently Used Apps:", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontFamily = fontFamily)
                                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                                                     listOf(4 to "4 Apps", 6 to "6 Apps", 8 to "8 Apps").forEach { (v, text) ->
@@ -4183,7 +4240,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
     val allUsersVal by activity.userRepository.allUsers.collectAsState(initial = emptyList())
     val webSuggestionsVal by activity.webSuggestions.collectAsState()
 
-    val contextForSearch = androidx.compose.ui.platform.LocalContext.current
+    val contextForSearch = LocalContext.current
     LaunchedEffect(searchQuery, allUsersVal, uiState.apps, webSuggestionsVal) {
         if (searchQuery.trim().isEmpty()) {
             searchResults = emptyList()
@@ -4348,24 +4405,21 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                 val app = topNApps.getOrNull(firstVisibleIndex - 1)
                 app?.label?.firstOrNull()?.uppercaseChar()
             } else if (firstVisibleIndex == topNApps.size + 1) {
-                val firstRest = restAppsEntries.firstOrNull()
-                when (firstRest) {
+                when (val firstRest = restAppsEntries.firstOrNull()) {
                     is ListEntry.Header -> firstRest.letter
                     is ListEntry.App -> firstRest.appInfo.label.firstOrNull()?.uppercaseChar()
                     null -> null
                 }
             } else {
                 val restIndex = firstVisibleIndex - topNApps.size - 2
-                val entry = restAppsEntries.getOrNull(restIndex)
-                when (entry) {
+                when (val entry = restAppsEntries.getOrNull(restIndex)) {
                     is ListEntry.Header -> entry.letter
                     is ListEntry.App -> entry.appInfo.label.firstOrNull()?.uppercaseChar()
                     null -> null
                 }
             }
         } else {
-            val entry = standardListEntries.getOrNull(firstVisibleIndex)
-            when (entry) {
+            when (val entry = standardListEntries.getOrNull(firstVisibleIndex)) {
                 is ListEntry.Header -> entry.letter
                 is ListEntry.App -> entry.appInfo.label.firstOrNull()?.uppercaseChar()
                 null -> null
@@ -6054,8 +6108,8 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                     // Search Bar underneath the App List (At the bottom of the screen)
                     androidx.compose.animation.AnimatedVisibility(
                         visible = !isNotificationsExpanded,
-                        enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.expandVertically(expandFrom = Alignment.Top),
-                        exit = androidx.compose.animation.fadeOut() + androidx.compose.animation.shrinkVertically(shrinkTowards = Alignment.Top)
+                        enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
+                        exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top)
                     ) {
                         AdvancedSearchBar(
                             query = searchQuery,
@@ -6189,10 +6243,10 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
             } // Close Box wrapper that animates scale/translate
 
             // Full screen grid overview mode
-            androidx.compose.animation.AnimatedVisibility(
+            AnimatedVisibility(
                 visible = zoomLevel == 2,
-                enter = androidx.compose.animation.fadeIn(),
-                exit = androidx.compose.animation.fadeOut()
+                enter = fadeIn(),
+                exit = fadeOut()
             ) {
                 PageReorderOverview(
                     activePagesVal = displayedPages,
@@ -6216,10 +6270,10 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
             }
 
             // Underneath Options Panel when zoomed out
-            androidx.compose.animation.AnimatedVisibility(
+            AnimatedVisibility(
                 visible = zoomLevel == 1,
-                enter = androidx.compose.animation.slideInVertically(initialOffsetY = { it / 2 }) + androidx.compose.animation.fadeIn(),
-                exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { it / 2 }) + androidx.compose.animation.fadeOut(),
+                enter = androidx.compose.animation.slideInVertically(initialOffsetY = { it / 2 }) + fadeIn(),
+                exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { it / 2 }) + fadeOut(),
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
@@ -6399,10 +6453,10 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
         }
 
         // Settings full sheet config Dialog
-        androidx.compose.animation.AnimatedVisibility(
+        AnimatedVisibility(
             visible = showSettingsPanel,
-            enter = androidx.compose.animation.slideInVertically(initialOffsetY = { it }) + androidx.compose.animation.fadeIn(),
-            exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { it }) + androidx.compose.animation.fadeOut()
+            enter = androidx.compose.animation.slideInVertically(initialOffsetY = { it }) + fadeIn(),
+            exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { it }) + fadeOut()
         ) {
             SettingsPanel(
                 onClose = { 
@@ -6441,7 +6495,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
             val bounds = animatingAppIconBoundsVal ?: android.graphics.Rect(150, 450, 350, 650)
             
             val configuration = androidx.compose.ui.platform.LocalConfiguration.current
-            val localDensity = androidx.compose.ui.platform.LocalDensity.current
+            val localDensity = LocalDensity.current
             
             val screenWidthPx = with(localDensity) { configuration.screenWidthDp.dp.toPx() }
             val screenHeightPx = with(localDensity) { configuration.screenHeightDp.dp.toPx() }
@@ -6523,7 +6577,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
 }
 
 @Composable
-fun StyledAppIcon(icon: android.graphics.drawable.Drawable, pack: String, themeColor: Color, size: androidx.compose.ui.unit.Dp = 38.dp) {
+fun StyledAppIcon(icon: Drawable, pack: String, themeColor: Color, size: androidx.compose.ui.unit.Dp = 38.dp) {
     Box(modifier = Modifier.size(size), contentAlignment = Alignment.Center) {
         val painter = rememberAsyncImagePainter(icon)
         when (pack) {
@@ -6608,14 +6662,14 @@ fun AppRow(
     )
     val separationProgress = (-animatedPullX / 100f).coerceIn(0f, 1.3f)
 
-    val currentContext = androidx.compose.ui.platform.LocalContext.current
+    val currentContext = LocalContext.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(start = 44.dp, end = 16.dp)
             .onGloballyPositioned { layoutCoordinates ->
                 val size = layoutCoordinates.size
-                val position = layoutCoordinates.localToWindow(androidx.compose.ui.geometry.Offset.Zero)
+                val position = layoutCoordinates.localToWindow(Offset.Zero)
                 val rect = android.graphics.Rect(
                     position.x.toInt(),
                     position.y.toInt(),
@@ -6637,7 +6691,7 @@ fun AppRow(
                 if (touchY != null && sidebarInteractiveProgress > 0.01f) {
                     val approxItemHeight = 60.dp.toPx()
                     val itemCenterLocal = (index - listState.firstVisibleItemIndex) * approxItemHeight - listState.firstVisibleItemScrollOffset + (approxItemHeight / 2f)
-                    val dy = kotlin.math.abs(itemCenterLocal - touchY)
+                    val dy = abs(itemCenterLocal - touchY)
                     
                     val maxDist = 220.dp.toPx()
                     val effect = if (dy < maxDist) {
@@ -6693,7 +6747,7 @@ fun AppRow(
                             scaleY = s
                             alpha = s
                         }
-                        .background(iconThemeColor, androidx.compose.foundation.shape.CircleShape)
+                        .background(iconThemeColor, CircleShape)
                 )
             }
             StyledAppIcon(app.icon, iconPackVal, iconThemeColor, size = 30.dp)
@@ -6727,7 +6781,7 @@ fun AppRow(
                     if (touchY != null && sidebarInteractiveProgress > 0.01f) {
                         val approxItemHeight = 60.dp.toPx()
                         val itemCenterLocal = (index - listState.firstVisibleItemIndex) * approxItemHeight - listState.firstVisibleItemScrollOffset + (approxItemHeight / 2f)
-                        val dy = kotlin.math.abs(itemCenterLocal - touchY)
+                        val dy = abs(itemCenterLocal - touchY)
                         val maxDist = 220.dp.toPx()
                         if (dy < maxDist) {
                             val fraction = dy / maxDist
@@ -6751,6 +6805,8 @@ fun MusicPage(
     activity: MainActivity,
     modifier: Modifier = Modifier
 ) {
+    val isNotifGranted by activity.isNotificationPermissionGranted.collectAsState()
+
     if (trackInfo == null) {
         Box(
             modifier = modifier.fillMaxSize(),
@@ -6779,7 +6835,7 @@ fun MusicPage(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = "No Music Playing",
+                        text = if (!isNotifGranted) "Permission Required" else "No Music Playing",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
@@ -6787,13 +6843,35 @@ fun MusicPage(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Open any music app (like Spotify, YouTube, etc.) and play media to activate this screen.",
+                        text = if (!isNotifGranted) 
+                            "Dextera requires Notification Access to detect and control music playback. Please grant it in settings."
+                            else "Open any music app (like Spotify, YouTube, etc.) and play media to activate this screen.",
                         fontSize = 13.sp,
                         color = Color.White.copy(alpha = 0.5f),
                         fontFamily = fontFamily,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        textAlign = TextAlign.Center,
                         lineHeight = 18.sp
                     )
+                    
+                    if (!isNotifGranted) {
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Button(
+                            onClick = {
+                                try {
+                                    val intent = Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).apply {
+                                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    }
+                                    activity.startActivity(intent)
+                                } catch (e: Exception) {
+                                    android.widget.Toast.makeText(activity, "Settings could not be opened", android.widget.Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = themeColor),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text("Grant Access", color = Color.Black, fontWeight = FontWeight.Bold)
+                        }
+                    }
                 }
             }
         }
@@ -7026,7 +7104,7 @@ fun MusicPage(
                         }
                     }
 
-                    androidx.compose.animation.AnimatedVisibility(
+                    AnimatedVisibility(
                         visible = feedbackIconState != null,
                         enter = fadeIn() + scaleIn(initialScale = 0.6f),
                         exit = fadeOut() + scaleOut(targetScale = 0.6f)
@@ -7034,7 +7112,7 @@ fun MusicPage(
                         Box(
                             modifier = Modifier
                                 .size(72.dp)
-                                .background(Color.Black.copy(alpha = 0.5f), shape = androidx.compose.foundation.shape.CircleShape),
+                                .background(Color.Black.copy(alpha = 0.5f), shape = CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
@@ -7507,7 +7585,7 @@ fun SwipeToDismissNotification(
                                             val targetPkg = sbn?.packageName ?: item.pkg
                                             val fallbackIntent = context.packageManager.getLaunchIntentForPackage(targetPkg)
                                             if (fallbackIntent != null) {
-                                                fallbackIntent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                                                fallbackIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                                 context.startActivity(fallbackIntent)
                                             }
                                         } catch (ex: Exception) {
@@ -7676,7 +7754,7 @@ fun SwipeToDismissNotification(
                         androidx.compose.foundation.text.BasicTextField(
                             value = replyText,
                             onValueChange = { replyText = it },
-                            textStyle = androidx.compose.ui.text.TextStyle(
+                            textStyle = TextStyle(
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontSize = 12.sp,
                                 fontFamily = fontFamily
@@ -7718,11 +7796,11 @@ fun SwipeToDismissNotification(
                             onClick = {
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 if (replyText.isNotEmpty()) {
-                                    val resultBundle = android.os.Bundle()
+                                    val resultBundle = Bundle()
                                     for (remoteInput in remoteInputs) {
                                         resultBundle.putCharSequence(remoteInput.resultKey, replyText)
                                     }
-                                    val fillInIntent = android.content.Intent()
+                                    val fillInIntent = Intent()
                                     android.app.RemoteInput.addResultsToIntent(remoteInputs, fillInIntent, resultBundle)
                                     try {
                                         action.actionIntent?.send(context, 0, fillInIntent)
@@ -7920,7 +7998,7 @@ fun NotificationsPage(
                     groups.toList()
                 }
 
-                androidx.compose.foundation.lazy.LazyColumn(
+                LazyColumn(
                     modifier = Modifier.weight(1f).fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
@@ -8114,8 +8192,8 @@ fun NotificationsPage(
 
                                     androidx.compose.animation.AnimatedVisibility(
                                         visible = isExpanded,
-                                        enter = androidx.compose.animation.expandVertically() + androidx.compose.animation.fadeIn(),
-                                        exit = androidx.compose.animation.shrinkVertically() + androidx.compose.animation.fadeOut()
+                                        enter = expandVertically() + fadeIn(),
+                                        exit = shrinkVertically() + fadeOut()
                                     ) {
                                         Column(
                                             modifier = Modifier.fillMaxWidth(),
@@ -8175,8 +8253,8 @@ fun NotificationsPage(
 class MyNotificationListenerService : android.service.notification.NotificationListenerService() {
     companion object {
         var instance: MyNotificationListenerService? = null
-        val notificationsFlow = kotlinx.coroutines.flow.MutableStateFlow<List<AppNotification>>(emptyList())
-        val mediaFlow = kotlinx.coroutines.flow.MutableStateFlow<MediaTrackInfo?>(null)
+        val notificationsFlow = MutableStateFlow<List<AppNotification>>(emptyList())
+        val mediaFlow = MutableStateFlow<MediaTrackInfo?>(null)
         var isConnected = false
         var activeController: android.media.session.MediaController? = null
     }
@@ -8189,7 +8267,7 @@ class MyNotificationListenerService : android.service.notification.NotificationL
         instance = this
         
         try {
-            val mediaSessionManager = getSystemService(Context.MEDIA_SESSION_SERVICE) as android.media.session.MediaSessionManager
+            val mediaSessionManager = getSystemService(MEDIA_SESSION_SERVICE) as android.media.session.MediaSessionManager
             val componentName = android.content.ComponentName(this, MyNotificationListenerService::class.java)
             val listener = android.media.session.MediaSessionManager.OnActiveSessionsChangedListener { controllers ->
                 updateActiveMedia()
@@ -8200,6 +8278,7 @@ class MyNotificationListenerService : android.service.notification.NotificationL
             e.printStackTrace()
         }
         
+        updateActiveMedia()
         fetchActiveNotifications()
     }
 
@@ -8210,13 +8289,17 @@ class MyNotificationListenerService : android.service.notification.NotificationL
         
         try {
             sessionListener?.let { listener ->
-                val mediaSessionManager = getSystemService(Context.MEDIA_SESSION_SERVICE) as android.media.session.MediaSessionManager
+                val mediaSessionManager = getSystemService(MEDIA_SESSION_SERVICE) as android.media.session.MediaSessionManager
                 mediaSessionManager.removeOnActiveSessionsChangedListener(listener)
             }
             sessionListener = null
         } catch (e: Exception) {
             e.printStackTrace()
         }
+        
+        activeController?.unregisterCallback(mediaCallback)
+        activeController = null
+        mediaFlow.value = null
     }
 
     override fun onNotificationPosted(sbn: android.service.notification.StatusBarNotification?) {
@@ -8229,9 +8312,21 @@ class MyNotificationListenerService : android.service.notification.NotificationL
         fetchActiveNotifications()
     }
 
+    private val mediaCallback = object : android.media.session.MediaController.Callback() {
+        override fun onPlaybackStateChanged(state: android.media.session.PlaybackState?) {
+            updateActiveMedia()
+        }
+        override fun onMetadataChanged(metadata: android.media.MediaMetadata?) {
+            updateActiveMedia()
+        }
+        override fun onSessionDestroyed() {
+            updateActiveMedia()
+        }
+    }
+
     private fun updateActiveMedia() {
         try {
-            val mediaSessionManager = getSystemService(Context.MEDIA_SESSION_SERVICE) as android.media.session.MediaSessionManager
+            val mediaSessionManager = getSystemService(MEDIA_SESSION_SERVICE) as android.media.session.MediaSessionManager
             val componentName = android.content.ComponentName(this, MyNotificationListenerService::class.java)
             val controllers = mediaSessionManager.getActiveSessions(componentName)
             
@@ -8243,6 +8338,7 @@ class MyNotificationListenerService : android.service.notification.NotificationL
                     val state = controller.playbackState?.state
                     state == android.media.session.PlaybackState.STATE_PLAYING ||
                     state == android.media.session.PlaybackState.STATE_BUFFERING ||
+                    state == android.media.session.PlaybackState.STATE_CONNECTING ||
                     state == android.media.session.PlaybackState.STATE_FAST_FORWARDING ||
                     state == android.media.session.PlaybackState.STATE_REWINDING
                 } ?: controllers.firstOrNull()
@@ -8264,10 +8360,11 @@ class MyNotificationListenerService : android.service.notification.NotificationL
                         ?: metadata?.getString(android.media.MediaMetadata.METADATA_KEY_DISPLAY_SUBTITLE)
                         ?: metadata?.getText(android.media.MediaMetadata.METADATA_KEY_DISPLAY_SUBTITLE)?.toString()
                         ?: ""
-                    val duration = metadata?.getLong(android.media.MediaMetadata.METADATA_KEY_DURATION) ?: 180000L
+                    val duration = metadata?.getLong(android.media.MediaMetadata.METADATA_KEY_DURATION) ?: 0L
                     val progress = playbackState?.position ?: 0L
                     
-                    val isPlaying = playbackState?.state == android.media.session.PlaybackState.STATE_PLAYING
+                    val isPlaying = playbackState?.state == android.media.session.PlaybackState.STATE_PLAYING || 
+                                    playbackState?.state == android.media.session.PlaybackState.STATE_BUFFERING
                     
                     if (title.isNotEmpty()) {
                         val artwork = try {
@@ -8290,7 +8387,7 @@ class MyNotificationListenerService : android.service.notification.NotificationL
             }
             
             if (foundMedia == null) {
-                val active = activeNotifications
+                val active = try { activeNotifications } catch (e: Exception) { null }
                 if (active != null) {
                     for (sbn in active) {
                         if (sbn == null) continue
@@ -8300,7 +8397,8 @@ class MyNotificationListenerService : android.service.notification.NotificationL
                         
                         val isTransport = notification.category == android.app.Notification.CATEGORY_TRANSPORT ||
                                           extras.containsKey("android.mediaSession") ||
-                                          pkg.contains("spotify") || pkg.contains("music") || pkg.contains("youtube") || pkg.contains("vlc")
+                                          pkg.contains("spotify") || pkg.contains("music") || pkg.contains("youtube") || pkg.contains("vlc") ||
+                                          pkg.contains("pandora") || pkg.contains("soundcloud") || pkg.contains("tidal") || pkg.contains("deezer")
                         
                         if (isTransport) {
                             val titleChar = extras.getCharSequence("android.title")
@@ -8320,7 +8418,7 @@ class MyNotificationListenerService : android.service.notification.NotificationL
                                     title = title,
                                     artist = artist,
                                     packageName = pkg,
-                                    isPlaying = true,
+                                    isPlaying = true, // If it's in notifications, it's likely active
                                     artwork = artworkVal
                                 )
                                 break
@@ -8330,13 +8428,10 @@ class MyNotificationListenerService : android.service.notification.NotificationL
                 }
             }
             
-            // Critical Binding: If we matched foundMedia via notification or if bestController doesn't match the package of foundMedia,
-            // we link the appropriate controller explicitly so transport controls still operate correctly.
-            if (foundMedia != null && controllers != null && (bestController == null || bestController.packageName != foundMedia.packageName)) {
-                val matchingController = controllers.find { it.packageName == foundMedia.packageName }
-                if (matchingController != null) {
-                    bestController = matchingController
-                }
+            // Handle callback registration for real-time updates
+            if (bestController != activeController) {
+                activeController?.unregisterCallback(mediaCallback)
+                bestController?.registerCallback(mediaCallback)
             }
             
             activeController = bestController
@@ -8604,7 +8699,7 @@ fun WidgetPage(
                                 if (isEditingVal) {
                                     var accumulatedDragX by remember(widget.id) { mutableStateOf(0f) }
                                     var accumulatedDragY by remember(widget.id) { mutableStateOf(0f) }
-                                    val density = androidx.compose.ui.platform.LocalDensity.current
+                                    val density = LocalDensity.current
                                     val thresholdPx = with(density) { 60.dp.toPx() }
 
                                     // Right Handle (Mid-Right edge)
@@ -8767,7 +8862,7 @@ fun WidgetPage(
                                                         fontSize = 11.sp,
                                                         fontWeight = FontWeight.Medium,
                                                         fontFamily = fontFamily,
-                                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                                        textAlign = TextAlign.Center,
                                                         lineHeight = 11.sp
                                                     )
                                                 }
@@ -8807,7 +8902,7 @@ fun WidgetPage(
                                                             fontSize = 11.sp,
                                                             fontWeight = FontWeight.Medium,
                                                             fontFamily = fontFamily,
-                                                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                                            textAlign = TextAlign.Center,
                                                             lineHeight = 11.sp
                                                         )
                                                     }
@@ -8851,7 +8946,7 @@ fun WidgetPage(
                                                             fontSize = 11.sp,
                                                             fontWeight = FontWeight.Medium,
                                                             fontFamily = fontFamily,
-                                                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                                            textAlign = TextAlign.Center,
                                                             lineHeight = 11.sp
                                                         )
                                                     }
@@ -8951,8 +9046,8 @@ fun PageReorderOverview(
                 .weight(1f),
             contentAlignment = Alignment.TopCenter
         ) {
-            androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
-                columns = androidx.compose.foundation.lazy.grid.GridCells.Fixed(columns),
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(columns),
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -9244,7 +9339,7 @@ fun AlphabetHeaderRow(
     letter: Char,
     isActive: Boolean,
     isTouchingSidebar: Boolean,
-    currentFontFamily: androidx.compose.ui.text.font.FontFamily?,
+    currentFontFamily: FontFamily?,
     themeColor: Color
 ) {
     Box(
