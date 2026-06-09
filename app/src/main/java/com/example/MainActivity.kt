@@ -4200,9 +4200,9 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
     val widgetDataListVal by activity.widgetDataList.collectAsState()
     var currentPageIndex by remember { mutableIntStateOf(0) }
     
-    val displayedPages = remember(activePagesVal) {
+    val displayedPages = remember(activePagesVal, mediaTrackInfoVal) {
         val filtered = activePagesVal.filter { page ->
-            true
+            if (page == "Music") mediaTrackInfoVal != null else true
         }
         if (filtered.isEmpty()) listOf("App List") else filtered
     }
@@ -4615,7 +4615,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                         translationY = translationYFactor * density.density
                         clip = zoomLevel > 0 || appTransitionProgressVal > 0.01f
                         shape = RoundedCornerShape(24.dp)
-                        shadowElevation = if (zoomLevel > 0) 16.dp.toPx() else 0f
+                        shadowElevation = 0f
                         alpha = mainAlphaFactor * wsAlpha
                     }
                     .then(
@@ -7104,23 +7104,25 @@ fun MusicPage(
                         }
                     }
 
-                    AnimatedVisibility(
-                        visible = feedbackIconState != null,
-                        enter = fadeIn() + scaleIn(initialScale = 0.6f),
-                        exit = fadeOut() + scaleOut(targetScale = 0.6f)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(72.dp)
-                                .background(Color.Black.copy(alpha = 0.5f), shape = CircleShape),
-                            contentAlignment = Alignment.Center
+                    Box {
+                        AnimatedVisibility(
+                            visible = feedbackIconState != null,
+                            enter = fadeIn() + scaleIn(initialScale = 0.6f),
+                            exit = fadeOut() + scaleOut(targetScale = 0.6f)
                         ) {
-                            Icon(
-                                imageVector = if (feedbackIconState == true) Icons.Default.PlayArrow else Icons.Default.Pause,
-                                contentDescription = if (feedbackIconState == true) "Play" else "Pause",
-                                tint = themeColor,
-                                modifier = Modifier.size(44.dp)
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .size(72.dp)
+                                    .background(Color.Black.copy(alpha = 0.5f), shape = CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = if (feedbackIconState == true) Icons.Default.PlayArrow else Icons.Default.Pause,
+                                    contentDescription = if (feedbackIconState == true) "Play" else "Pause",
+                                    tint = themeColor,
+                                    modifier = Modifier.size(44.dp)
+                                )
+                            }
                         }
                     }
                 }
@@ -7241,11 +7243,10 @@ fun MusicPage(
                                 .height(44.dp)
                                 .padding(horizontal = 4.dp)
                         ) {
-                            val canvasWidth = constraints.maxWidth.toFloat()
-                            val canvasHeight = constraints.maxHeight.toFloat()
-                            val density = LocalDensity.current.density
+                            val localDensity = LocalDensity.current
+                            val canvasWidth = maxWidth.value * localDensity.density
                             val barCount = 36
-                            val spacingPx = 4.dp.value * density
+                            val spacingPx = 4.dp.value * localDensity.density
                             val rawBarWidth = (canvasWidth - (spacingPx * (barCount - 1))) / barCount
                             val barWidth = rawBarWidth.coerceAtLeast(3f)
 
@@ -9073,7 +9074,7 @@ fun PageReorderOverview(
                                 scaleY = animatedScale
                                 this.translationX = translationX
                                 this.translationY = translationY
-                                shadowElevation = if (isDragged) 16.dp.toPx() else 2.dp.toPx()
+                                shadowElevation = if (isDragged) 16.dp.toPx() else 0f
                                 clip = true
                                 shape = RoundedCornerShape(16.dp)
                             }
