@@ -230,7 +230,7 @@ class MainActivity : ComponentActivity() {
                 val locationName = if (location != null) {
                     val geocoder = android.location.Geocoder(this@MainActivity, java.util.Locale.getDefault())
                     val addresses = geocoder.getFromLocation(location.latitude, location.longitude, 1)
-                    if (!addresses.isNullOrEmpty()) {
+                    if (addresses != null && addresses.isNotEmpty()) {
                         val city = addresses[0].locality ?: addresses[0].subAdminArea ?: addresses[0].adminArea ?: ""
                         val country = addresses[0].countryName ?: ""
                         if (city.isNotEmpty() || country.isNotEmpty()) "$city, $country" else "a beautiful scenic place"
@@ -270,7 +270,7 @@ class MainActivity : ComponentActivity() {
     val appIconBoundsMap = java.util.concurrent.ConcurrentHashMap<String, android.graphics.Rect>()
 
     val selectedWallpaper = MutableStateFlow("System Wallpaper")
-    val clockStyle = MutableStateFlow("Dextera Date")
+    val clockStyle = MutableStateFlow("Zenith Date")
     val selectedFont = MutableStateFlow("System Default")
     val iconPack = MutableStateFlow("Classic")
     val themeMode = MutableStateFlow("Dark Mode")
@@ -436,7 +436,7 @@ class MainActivity : ComponentActivity() {
                     bmp = BitmapFactory.decodeFile(file.absolutePath)
                 }
             } else if (wall == "System Wallpaper") {
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O_MR1) {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
                     try {
                         val wpManager = android.app.WallpaperManager.getInstance(this@MainActivity)
                         val wpColors = wpManager.getWallpaperColors(android.app.WallpaperManager.FLAG_SYSTEM)
@@ -711,7 +711,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    @android.annotation.SuppressLint("MissingPermission")
     fun refreshAppUsageScores() {
         lifecycleScope.launch(Dispatchers.IO) {
             val scores = mutableMapOf<String, Long>()
@@ -985,7 +984,7 @@ class MainActivity : ComponentActivity() {
 
         val prefs = getSharedPreferences("launcher_settings", Context.MODE_PRIVATE)
         selectedWallpaper.value = prefs.getString("wallpaper", "System Wallpaper") ?: "System Wallpaper"
-        clockStyle.value = prefs.getString("clock_style", "Dextera Date") ?: "Dextera Date"
+        clockStyle.value = prefs.getString("clock_style", "Zenith Date") ?: "Zenith Date"
         selectedFont.value = prefs.getString("font", "System Default") ?: "System Default"
         iconPack.value = prefs.getString("icon_pack", "Classic") ?: "Classic"
         themeMode.value = prefs.getString("theme_mode", "Dark Mode") ?: "Dark Mode"
@@ -1067,7 +1066,7 @@ class MainActivity : ComponentActivity() {
                     containerColor = Color.Transparent,
                     contentWindowInsets = WindowInsets(0, 0, 0, 0)
                 ) { innerPadding ->
-                    DexteraLauncherApp(modifier = Modifier.fillMaxSize().padding(innerPadding))
+                    ZenithLauncherApp(modifier = Modifier.fillMaxSize())
                 }
             }
         }
@@ -1370,7 +1369,7 @@ fun ClockStyleWidget(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         when (style) {
-            "Dextera Date" -> {
+            "Zenith Date" -> {
                 Column(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 24.dp),
                     horizontalAlignment = Alignment.Start
@@ -1598,7 +1597,7 @@ fun SwipableWidgetStack(fontFamily: FontFamily, primaryColor: Color) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Box(modifier = Modifier.size(5.dp).background(Color.Yellow, RoundedCornerShape(2.5.dp)))
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text("02:00 PM - Dextera Development Sync", fontSize = 11.sp, color = Color.White, maxLines = 1)
+                                    Text("02:00 PM - Zenith Development Sync", fontSize = 11.sp, color = Color.White, maxLines = 1)
                                 }
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Box(modifier = Modifier.size(5.dp).background(Color.Gray, RoundedCornerShape(2.5.dp)))
@@ -2699,15 +2698,7 @@ fun AppContextMenuOverlay(
         }
     }
 
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val activity = remember(context) {
-        var cur = context
-        while (cur is android.content.ContextWrapper) {
-            if (cur is MainActivity) return@remember cur
-            cur = cur.baseContext
-        }
-        cur as? MainActivity
-    }
+    val activity = androidx.compose.ui.platform.LocalContext.current as? MainActivity
     val folderMap = activity?.folderMapState?.collectAsState()?.value ?: emptyMap()
     val selectedFolders = folders.filter { folderName ->
         app.packageName in (folderMap[folderName] ?: emptyList())
@@ -2800,7 +2791,7 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
                     Text(
-                        text = activeCategory ?: "Dextera Settings",
+                        text = activeCategory ?: "Zenith Settings",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground,
@@ -2824,7 +2815,7 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                 ) {
                     val categories = listOf(
                         // Style category removed per user request
-                        Triple("Performance", "Dextera 120Hz Core Optimization", "Enable ultra low-latency GC, surface buffer queues, CPU affinity, and GPU overdraw elimination"),
+                        Triple("Performance", "Zenith 120Hz Core Optimization", "Enable ultra low-latency GC, surface buffer queues, CPU affinity, and GPU overdraw elimination"),
                         Triple("Gestures", "Touch Gestures & Taps", "Double tap visual sleep locks and search bar swipe shortcuts"),
                         Triple("Permissions", "System Access & Services", "Manage coarse/precise location updates and notifications listeners"),
                         Triple("Search", "Search & Discovery", "Customize search result limits and result prioritization"),
@@ -3062,7 +3053,7 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                                             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                                 Text("Home Screen Clock Styles", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontFamily = fontFamily)
                                                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                                    listOf("Dextera Date", "Minimal Digital", "Bold Accent", "Classic Analog").forEach { style ->
+                                                    listOf("Zenith Date", "Minimal Digital", "Bold Accent", "Classic Analog").forEach { style ->
                                                         val isSel = clockStyleVal == style
                                                         Box(modifier = Modifier.weight(1f).border(1.dp, if (isSel) themeColor else MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(10.dp)).background(if (isSel) themeColor.copy(alpha = 0.15f) else Color.Transparent).clickable { activity.clockStyle.value = style; activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit().putString("clock_style", style).apply() }.padding(10.dp), contentAlignment = Alignment.Center) {
                                                             Text(style, fontSize = 11.sp, color = if (isSel) themeColor else MaterialTheme.colorScheme.onSurface, maxLines = 1, fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal, fontFamily = fontFamily)
@@ -3217,7 +3208,7 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
                                                 Column {
-                                                    Text("Dextera Engine Diagnostics", fontSize = 16.sp, color = themeColor, fontWeight = FontWeight.Bold, fontFamily = fontFamily)
+                                                    Text("Zenith Engine Diagnostics", fontSize = 16.sp, color = themeColor, fontWeight = FontWeight.Bold, fontFamily = fontFamily)
                                                     Text("Real-time telemetry & display synchronization", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontFamily = fontFamily)
                                                 }
                                                 Box(
@@ -3441,7 +3432,7 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                                                     Text("👌", fontSize = 16.sp, modifier = Modifier.padding(end = 8.dp))
                                                     Column {
                                                         Text("Pinch In Shortcut", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.SemiBold, fontFamily = fontFamily)
-                                                        Text("Opens Dextera Settings panel", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontFamily = fontFamily)
+                                                        Text("Opens Zenith Settings panel", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontFamily = fontFamily)
                                                     }
                                                 }
                                             }
@@ -4095,7 +4086,7 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
 }
 
 @Composable
-fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewModel = viewModel()) {
+fun ZenithLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewModel = viewModel()) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
@@ -5804,7 +5795,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                         BoxWithConstraints(
                                             modifier = Modifier.fillMaxSize()
                                         ) {
-                                            val maxItemHeight = this.maxHeight / letters.size
+                                            val maxItemHeight = maxHeight / letters.size
                                             val dynamicFontSize = (maxItemHeight.value * 0.5f).coerceIn(10f, 15f).sp
                                             
                                             Column(

@@ -1,7 +1,7 @@
-﻿Architectural Engineering Report: Implementing Seamless App-Open Transitions in Dextera Launcher
+﻿Architectural Engineering Report: Implementing Seamless App-Open Transitions in Zenith Launcher
 Architectural Evolution of Android App Transitions
 Historically, Android activity transitions operated under a rigid, window-level translation model where the incoming activity's window was treated as a single, indivisible entity. Prior to Android 9, transition animations were coordinated strictly via system-level window animations that applied basic scale, fade, or slide transformations globally over the window space. This architecture meant that custom launcher replacements could not easily synchronize home screen-level user interface elements with the system-level layout drawing of the incoming application.2 The launcher and the application existed in separate rendering pipelines, causing transition sequences to look disjointed.3
-With the release of Android 9, Google introduced Synchronized App Transitions.2 Under this modernized paradigm, the platform permits the system launcher or SystemUI process to request frame-by-frame, synchronized execution of both view-level and window-level animations.2 When the launcher draws a new frame as part of an animation, it requests a specific transform on the animating app surface.2 This transform determines how the app is composed on the screen and is synchronized directly with the specific frame currently being drawn via system surface transactions.2 For a custom home replacement like Dextera Launcher, leveraging this model is critical to achieving a seamless handoff where home screen icons morph organically into the full-screen application window.2
+With the release of Android 9, Google introduced Synchronized App Transitions.2 Under this modernized paradigm, the platform permits the system launcher or SystemUI process to request frame-by-frame, synchronized execution of both view-level and window-level animations.2 When the launcher draws a new frame as part of an animation, it requests a specific transform on the animating app surface.2 This transform determines how the app is composed on the screen and is synchronized directly with the specific frame currently being drawn via system surface transactions.2 For a custom home replacement like Zenith Launcher, leveraging this model is critical to achieving a seamless handoff where home screen icons morph organically into the full-screen application window.2
 For developers implementing custom platform-level experiences (such as kiosks or dedicated enterprise hardware), these transitions represent the final stage of a completely customized device boot cycle.5 At the initial operating system level, this cycle is governed by the system boot animation, which utilizes a precise folder structure inside a zero-compression file named bootanimation.zip.5 This file contains sequential PNG image directories mapped to a text descriptor, desc.txt, specifying the animation's width, height, frame rate, and loop behaviors.5 The system supports animation types such as p (which cuts abruptly when the OS loads) and c (which ensures the animation sequence plays to its final frame before dismissing).5 Custom implementations can be deployed either without root by using the Android Debug Bridge to push the package to /data/local, or compiled directly into a custom ROM by defining the PRODUCT_COPY_FILES directive within the device's build system makefile.5
 
 
@@ -10,7 +10,7 @@ For developers implementing custom platform-level experiences (such as kiosks or
 
 
                      ┌──────────────────────────────────────────────┐
-                    │          Dextera Launcher Process             │
+                    │          Zenith Launcher Process             │
                     │  (Captures tapped icon bounds via hierarchy)  │
                     └──────────────────────┬───────────────────────┘
                                            │
@@ -28,7 +28,7 @@ For developers implementing custom platform-level experiences (such as kiosks or
             └───────────────────────┘             └───────────────────────┘
 
 Comparative Analysis of Vendor OS Implementations
-To implement app opening and closing animations successfully within Dextera Launcher, developers must navigate a highly fragmented ecosystem of manufacturer-specific operating system skins.3 Modern Android architectures tie gesture navigation and the "Recents" overview screen directly to the pre-installed system launcher app.3 When a third-party launcher like Dextera Launcher is set as default, it operates as a standard, non-privileged application.3 This restriction often breaks gesture synchronization and introduces rendering lag.8
+To implement app opening and closing animations successfully within Zenith Launcher, developers must navigate a highly fragmented ecosystem of manufacturer-specific operating system skins.3 Modern Android architectures tie gesture navigation and the "Recents" overview screen directly to the pre-installed system launcher app.3 When a third-party launcher like Zenith Launcher is set as default, it operates as a standard, non-privileged application.3 This restriction often breaks gesture synchronization and introduces rendering lag.8
 
 
 Operating System Platform
@@ -57,11 +57,11 @@ Operating System Platform
 	Visible lag and micro-stutters when returning home 14
 	Button navigation injection combined with Macrodroid automation 14
 	In AOSP and close-to-stock operating systems (such as Nothing OS, Fairphone, or Pixel UI), Google implements the GestureNavContract API, which establishes a framework for third-party launchers to communicate spatial data directly to the system UI.7 However, on vendor skins like Samsung's One UI, the manufacturer does not support this contract for third-party launchers, prioritizing its native home screen app instead.6
-On Xiaomi's HyperOS, the system completely disables gestural navigation for alternative launchers.3 To bypass these blocks without root access, advanced users often modify system properties. They set the three-button navigation mode, run wireless debugging commands via Shizuku and aSHELL to force the gestural overlay package com.android.internal.systemui.navbar.gestural, and write custom macro configurations in utility apps to sustain the gestural input paths dynamically.14 For Dextera Launcher, a robust design must gracefully degrade from native system-level animations to custom user-space emulation depending on the host platform's API availability.4
+On Xiaomi's HyperOS, the system completely disables gestural navigation for alternative launchers.3 To bypass these blocks without root access, advanced users often modify system properties. They set the three-button navigation mode, run wireless debugging commands via Shizuku and aSHELL to force the gestural overlay package com.android.internal.systemui.navbar.gestural, and write custom macro configurations in utility apps to sustain the gestural input paths dynamically.14 For Zenith Launcher, a robust design must gracefully degrade from native system-level animations to custom user-space emulation depending on the host platform's API availability.4
 Mathematical Mapping and User-Space Emulation Techniques
-When executing app-open transitions on non-rooted devices, Dextera Launcher cannot directly manipulate the window manager's surface composition.6 Instead, it must rely on user-space emulations that simulate seamless morphing.4 A primary tool for this approach is Action Launcher's "AdaptiveZoom" technique, which animates an app icon to the center of the screen as the app loads.21 This is paired with custom folder animations to create a cohesive, natural expansion sequence.21
+When executing app-open transitions on non-rooted devices, Zenith Launcher cannot directly manipulate the window manager's surface composition.6 Instead, it must rely on user-space emulations that simulate seamless morphing.4 A primary tool for this approach is Action Launcher's "AdaptiveZoom" technique, which animates an app icon to the center of the screen as the app loads.21 This is paired with custom folder animations to create a cohesive, natural expansion sequence.21
 Coordinate Transformation Mathematics
-To initiate the transition, Dextera Launcher must compute the exact scale and translation values needed to map the icon's screen-space rectangle    to the target physical screen space   .4
+To initiate the transition, Zenith Launcher must compute the exact scale and translation values needed to map the icon's screen-space rectangle    to the target physical screen space   .4
 The scale factors (  ) are defined as:
   
 
@@ -70,11 +70,11 @@ The translation coordinates (  ) required to align the centers of the scaling wi
 
   
 
-To achieve natural movement, Dextera Launcher maps these parameters to an interpolator utilizing a standard FastOutSlowIn Bezier curve:
+To achieve natural movement, Zenith Launcher maps these parameters to an interpolator utilizing a standard FastOutSlowIn Bezier curve:
   
 
 For standard Material Design easing, the control points are defined as   ,   ,   , and   .4 This curve accelerates rapidly at start-time and decelerates smoothly near the target bounds.4
-To implement this flow, Dextera Launcher packages these spatial coordinates into the launching intent using Intent.setSourceBounds 4:
+To implement this flow, Zenith Launcher packages these spatial coordinates into the launching intent using Intent.setSourceBounds 4:
 
 
 
@@ -114,11 +114,11 @@ fun launchAppWithSourceBounds(context: Context, view: View, packageName: String)
    context.startActivity(launchIntent, options.toBundle())
 }
 
-Beyond simple scaling, Dextera Launcher can leverage the AndroidX :graphics:graphics-shapes library and Alex Lockwood’s ShapeShifter tool to perform runtime shape-morphing.23 This library enables the automatic calculation of transitions between rounded polygonal shapes on the fly.23 It achieves this by mapping the geometric outline features of two potentially dissimilar shapes.23
-The mapping process evaluates shape proximity and aligns outline coordinates.23 If the start shape (e.g., a custom squircle icon) and the end shape (e.g., the rectangular app window boundary) have different curve counts, the system performs "cutting" to dynamically insert additional control curves.23 This enables Dextera Launcher to mathematically morph a vector-based launcher icon outline into the starting viewport shape of the launched application window.23
+Beyond simple scaling, Zenith Launcher can leverage the AndroidX :graphics:graphics-shapes library and Alex Lockwood’s ShapeShifter tool to perform runtime shape-morphing.23 This library enables the automatic calculation of transitions between rounded polygonal shapes on the fly.23 It achieves this by mapping the geometric outline features of two potentially dissimilar shapes.23
+The mapping process evaluates shape proximity and aligns outline coordinates.23 If the start shape (e.g., a custom squircle icon) and the end shape (e.g., the rectangular app window boundary) have different curve counts, the system performs "cutting" to dynamically insert additional control curves.23 This enables Zenith Launcher to mathematically morph a vector-based launcher icon outline into the starting viewport shape of the launched application window.23
 Managing the Native Splash Screen API
 Coordinating user-space launcher transitions became more complex with the introduction of the native Splash Screen API in Android 12.24 Starting in Android 12, the operating system enforces a default system splash screen for all cold and warm app starts, rendering a window using the app's launcher icon element on a solid background.24 This change can conflict with custom launcher transitions, causing visual stutters, logo doubling, or unintended layout jumps during app handoffs.4
-To maintain visual continuity, the launched application should integrate the AndroidX SplashScreen compat library.24 While developers of external apps must implement this within their own codebases, Dextera Launcher can structure its launch intent parameters to prompt appropriate handoffs.21 For instance, adding ActivityOptions.setSplashScreenStyle or overriding the splash theme behavior helps keep the transition smooth.27
+To maintain visual continuity, the launched application should integrate the AndroidX SplashScreen compat library.24 While developers of external apps must implement this within their own codebases, Zenith Launcher can structure its launch intent parameters to prompt appropriate handoffs.21 For instance, adding ActivityOptions.setSplashScreenStyle or overriding the splash theme behavior helps keep the transition smooth.27
 When the target application is launch-ready, it can capture the transition state using SplashScreen.setKeepOnScreenCondition to hold the system splash screen until its data is fully loaded.26
 
 
@@ -127,7 +127,7 @@ When the target application is launch-ready, it can capture the transition state
 
 
 Kotlin
-// Example implementation for apps launched by Dextera to manage their entry transition
+// Example implementation for apps launched by Zenith to manage their entry transition
 class MainActivity : AppCompatActivity() {
    private val viewModel: MainViewModel by viewModels()
 
@@ -165,7 +165,7 @@ class MainActivity : AppCompatActivity() {
 
 If developers control the launched application (such as in an enterprise, kiosk, or custom ROM environment), they can also use the "fake splash screen" technique.25 In this setup, the target application immediately launches a dedicated, full-screen, translucent "fake" splash activity that matches the launcher's final transition frame perfectly.25 Users do not notice the transition, giving the app full animation control back to scale out remaining UI components, load background assets, and render its first structural state seamlessly.25
 High-Performance Implementation: Remote Animations and SurfaceControl
-To implement highly polished transitions on rooted configurations, Dextera Launcher can integrate with the QuickSwitch Magisk module.3 QuickSwitch binds Dextera Launcher directly as the operating system's primary QuickStep (Recents) provider.7 This integration grants the launcher system-privileged access to system transitions via the RemoteAnimationAdapter and SurfaceControl APIs.2
+To implement highly polished transitions on rooted configurations, Zenith Launcher can integrate with the QuickSwitch Magisk module.3 QuickSwitch binds Zenith Launcher directly as the operating system's primary QuickStep (Recents) provider.7 This integration grants the launcher system-privileged access to system transitions via the RemoteAnimationAdapter and SurfaceControl APIs.2
 
 
 
@@ -191,7 +191,7 @@ import android.view.SurfaceControl
 import android.view.View
 import android.view.animation.PathInterpolator
 
-class DexteraTransitionEngine {
+class ZenithTransitionEngine {
 
    fun executeSystemRemoteLaunch(context: Context, intent: Intent, iconView: View) {
        val duration = 350L // Standard Material Design transition duration
@@ -295,10 +295,10 @@ class DexteraTransitionEngine {
    }
 }
 
-Through this architecture, Dextera Launcher gains direct system-level control over the target application window during launch, allowing for frame-by-frame, hardware-accelerated transitions without any user-space rendering barriers.2
+Through this architecture, Zenith Launcher gains direct system-level control over the target application window during launch, allowing for frame-by-frame, hardware-accelerated transitions without any user-space rendering barriers.2
 Return-to-Home Handshake via GestureNavContract
-While expanding the app outwards completes the entrance flow, the illusion of seamless design breaks if returning home causes the application to instantly snap out of existence.20 To establish a symmetric animation, Dextera Launcher must implement the GestureNavContract system protocol.12
-When a user initiates a swipe-up gesture to go home, the gesture navigation subsystem asks Dextera Launcher where the application should collapse to.20 The system passes an incoming intent to the launcher containing the contract parameters.33 Dextera Launcher parses this payload, identifies the app's coordinate bounds on the desktop, and replies with the target coordinates.33 This ensures that the application window morphs smoothly back into its respective home screen icon.20
+While expanding the app outwards completes the entrance flow, the illusion of seamless design breaks if returning home causes the application to instantly snap out of existence.20 To establish a symmetric animation, Zenith Launcher must implement the GestureNavContract system protocol.12
+When a user initiates a swipe-up gesture to go home, the gesture navigation subsystem asks Zenith Launcher where the application should collapse to.20 The system passes an incoming intent to the launcher containing the contract parameters.33 Zenith Launcher parses this payload, identifies the app's coordinate bounds on the desktop, and replies with the target coordinates.33 This ensures that the application window morphs smoothly back into its respective home screen icon.20
 
 
 
@@ -315,7 +315,7 @@ import android.os.Bundle
 import android.os.Message
 import android.os.UserHandle
 
-class DexteraGestureContractReceiver {
+class ZenithGestureContractReceiver {
 
    companion object {
        private const val EXTRA_GESTURE_CONTRACT = "gesture_nav_contract_v1"
@@ -328,7 +328,7 @@ class DexteraGestureContractReceiver {
        val componentName = contractBundle.getParcelable<ComponentName>("gesture_nav_contract_component")?: return
        val callbackMessage = contractBundle.getParcelable<Message>("android.intent.extra.REMOTE_CALLBACK")?: return
 
-       // Compute the location on Dextera Launcher's layout grid
+       // Compute the location on Zenith Launcher's layout grid
        val targetIconBounds = locateIconOnGrid(componentName)
 
        val response = Bundle().apply {
@@ -353,18 +353,18 @@ class DexteraGestureContractReceiver {
    }
 
    private fun locateIconOnGrid(component: ComponentName): Rect {
-       // Query Dextera's workspace DB to find the target icon's coordinates
+       // Query Zenith's workspace DB to find the target icon's coordinates
        // Returns workspace Rect bounds (defaults to fallback screen area if missing)
        return Rect(120, 300, 260, 440)
    }
 }
 
-By processing this intent, Dextera Launcher informs the system's gesture navigation where to target the exit animation.20 This enables a fluid, reciprocal morph where the closing window collapses back into the original home screen icon bounds.12
+By processing this intent, Zenith Launcher informs the system's gesture navigation where to target the exit animation.20 This enables a fluid, reciprocal morph where the closing window collapses back into the original home screen icon bounds.12
 Engineering Framework and Performance Optimization
-To deliver a high-performance experience within Dextera Launcher, developers must address several performance and memory management challenges.2
+To deliver a high-performance experience within Zenith Launcher, developers must address several performance and memory management challenges.2
 Database Caching and IPC Optimization
 Launcher3-based implementations must maintain high performance when loading large datasets.34 Generating app icons and titles dynamically during transitions can cause noticeable frame drops.34 This is because fetching package metadata requires interprocess communication (IPC) calls to the system server.34
-To prevent transition stutters, Dextera Launcher should implement a persistence framework utilizing the iconloaderlib library.34 This library loads, standardizes, and caches adaptive icons directly into a local SQLite database, app_icons.db.34 Dextera Launcher can then stream these pre-rendered assets directly from local storage, keeping the main UI thread clear of heavy rendering tasks during transition windows.34
+To prevent transition stutters, Zenith Launcher should implement a persistence framework utilizing the iconloaderlib library.34 This library loads, standardizes, and caches adaptive icons directly into a local SQLite database, app_icons.db.34 Zenith Launcher can then stream these pre-rendered assets directly from local storage, keeping the main UI thread clear of heavy rendering tasks during transition windows.34
 Thread Coordination and Layout Suppression
 To guarantee steady 120 FPS rendering on modern displays, the transition engine must manage thread tasks and layout passes carefully.4 During the transition sequence, the framework uses a private API called suppressLayout to temporarily stop layout passes on parent views.4 This prevents unnecessary layout recalculations as the child view properties animate, reducing rendering overhead.4
 
@@ -383,7 +383,7 @@ To guarantee steady 120 FPS rendering on modern displays, the transition engine 
 │ Standard API Fallback│ Minimal (System UI)  │ 3.8 ms (Variable)        │
 └──────────────────────┴──────────────────────┴──────────────────────────┘
 
-By organizing tasks into priority-based pipelines, Dextera Launcher can keep frame render times low.2 Using the suppressLayout API prevents performance bottlenecks, ensuring that transitions remain fluid and responsive under varying system loads.2
+By organizing tasks into priority-based pipelines, Zenith Launcher can keep frame render times low.2 Using the suppressLayout API prevents performance bottlenecks, ensuring that transitions remain fluid and responsive under varying system loads.2
 Works cited
 1. Implement synchronized app transitions - Android Open Source Project, accessed June 4, 2026, https://source.android.com/docs/core/display/synched-app-transitions
 2. Why do custom launchers have terrible opening/closing animations on my Pixel? - Reddit, accessed June 4, 2026, https://www.reddit.com/r/GooglePixel/comments/150p2ew/why_do_custom_launchers_have_terrible/

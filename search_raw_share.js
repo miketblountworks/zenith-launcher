@@ -7,7 +7,7 @@ if (fs.existsSync('all_cleaned_strings.txt')) {
     
     // Let's print out lines that look like a user prompt or a conversation response!
     // Often they have specific characters or talk about android launchers or design
-    const terms = ['dextera', 'launcher', 'music', 'youtube', 'media', 'widget', 'waveform', 'haptic', 'amplitude', 'volume'];
+    const terms = ['zenith', 'launcher', 'music', 'youtube', 'media', 'widget', 'waveform', 'haptic', 'amplitude', 'volume'];
     
     terms.forEach(t => {
         let count = 0;
