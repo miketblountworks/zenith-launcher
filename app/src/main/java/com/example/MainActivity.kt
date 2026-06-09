@@ -7426,7 +7426,7 @@ fun MusicPage(
                     }
 
                     // Diagnostics Panel
-                    AnimatedVisibility(
+                    androidx.compose.animation.AnimatedVisibility(
                         visible = hudExpanded,
                         enter = expandVertically() + fadeIn(),
                         exit = shrinkVertically() + fadeOut()
