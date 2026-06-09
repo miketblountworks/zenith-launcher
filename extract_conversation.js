@@ -10,7 +10,7 @@ const strings = [];
 
 while ((match = regex.exec(html)) !== null) {
     const s = match[1];
-    if (s.includes('\\u003c') || s.includes('\\n') || s.includes('Zenith') || s.includes('home') || s.includes('screen') || s.includes('icon') || s.includes('launcher')) {
+    if (s.includes('\\u003c') || s.includes('\\n') || s.includes('Dextera') || s.includes('home') || s.includes('screen') || s.includes('icon') || s.includes('launcher')) {
         // Clean up escaped unicode and HTML
         const clean = s
             .replace(/\\u003cbr \\\/\\u003e/g, '\n')

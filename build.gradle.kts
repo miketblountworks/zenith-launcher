@@ -1,5 +1,5 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
-// packageName = "com.aistudio.zenithlauncher.xtqmz"
+// packageName = "com.aistudio.dexteralauncher.xtqmz"
 // versionNumber = 2
 plugins {
   alias(libs.plugins.android.application) apply false
