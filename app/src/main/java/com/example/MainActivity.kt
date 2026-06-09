@@ -7105,7 +7105,7 @@ fun MusicPage(
                     }
 
                     Box {
-                        AnimatedVisibility(
+                        androidx.compose.animation.AnimatedVisibility(
                             visible = feedbackIconState != null,
                             enter = fadeIn() + scaleIn(initialScale = 0.6f),
                             exit = fadeOut() + scaleOut(targetScale = 0.6f)
@@ -7244,9 +7244,9 @@ fun MusicPage(
                                 .padding(horizontal = 4.dp)
                         ) {
                             val localDensity = LocalDensity.current
-                            val canvasWidth = maxWidth.value * localDensity.density
+                            val canvasWidth = constraints.maxWidth.toFloat()
                             val barCount = 36
-                            val spacingPx = 4.dp.value * localDensity.density
+                            val spacingPx = with(localDensity) { 4.dp.toPx() }
                             val rawBarWidth = (canvasWidth - (spacingPx * (barCount - 1))) / barCount
                             val barWidth = rawBarWidth.coerceAtLeast(3f)
 
@@ -7255,7 +7255,7 @@ fun MusicPage(
                                     .fillMaxSize()
                                     .pointerInput(trackInfo) {
                                         detectTapGestures { offset ->
-                                            val fraction = (offset.x / size.width).coerceIn(0f, 1f)
+                                            val fraction = (offset.x / this.size.width).coerceIn(0f, 1f)
                                             val targetProgress = (fraction * trackInfo.durationMs).toLong()
                                             realProgressMs = targetProgress
                                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
@@ -7269,9 +7269,9 @@ fun MusicPage(
                                     .pointerInput(trackInfo) {
                                         var lastPercentagePoint = -1
                                         detectHorizontalDragGestures(
-                                            onHorizontalDrag = { change, dragAmount ->
+                                            onHorizontalDrag = { change, _ ->
                                                 change.consume()
-                                                val fraction = (change.position.x / size.width).coerceIn(0f, 1f)
+                                                val fraction = (change.position.x / this.size.width).coerceIn(0f, 1f)
                                                 val targetProgress = (fraction * trackInfo.durationMs).toLong()
                                                 realProgressMs = targetProgress
                                                 val percentageInt = (fraction * 24).toInt()
