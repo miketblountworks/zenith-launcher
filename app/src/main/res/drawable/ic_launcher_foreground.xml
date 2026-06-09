@@ -1,0 +1,13 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- Sweeping wave curve -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M34,24 c15,0 40,20 40,60 h-10 c0,-30 -20,-50 -30,-50 Z" />
+
+</vector>

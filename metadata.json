@@ -1,0 +1,6 @@
+{
+  "name": "Dextera Launcher",
+  "description": "A minimalist launcher app with a customizable sidebar for quick access to apps.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
