@@ -89,6 +89,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Build
@@ -96,7 +99,6 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Notifications
@@ -105,7 +107,6 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
@@ -179,6 +180,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.zIndex
+import androidx.core.content.edit
+import androidx.core.graphics.drawable.toDrawable
+import androidx.core.graphics.get
+import androidx.core.graphics.scale
+import androidx.core.net.toUri
+import androidx.core.os.BundleCompat
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.lifecycleScope
@@ -239,10 +246,9 @@ class MainActivity : ComponentActivity() {
     
     fun saveActivePages(pages: List<String>) {
         activePages.value = pages
-        getSharedPreferences("launcher_settings", MODE_PRIVATE)
-            .edit()
-            .putString("active_pages", pages.joinToString(","))
-            .apply()
+        getSharedPreferences("launcher_settings", MODE_PRIVATE).edit {
+            putString("active_pages", pages.joinToString(","))
+        }
     }
 
     fun dispatchMediaKey(keyCode: Int) {
@@ -286,6 +292,7 @@ class MainActivity : ComponentActivity() {
                 
                 val locationName = if (location != null) {
                     val geocoder = android.location.Geocoder(this@MainActivity, java.util.Locale.getDefault())
+                    @Suppress("DEPRECATION")
                     val addresses = geocoder.getFromLocation(location.latitude, location.longitude, 1)
                     if (!addresses.isNullOrEmpty()) {
                         val city = addresses[0].locality ?: addresses[0].subAdminArea ?: addresses[0].adminArea ?: ""
@@ -304,10 +311,9 @@ class MainActivity : ComponentActivity() {
                 if (success) {
                     withContext(Dispatchers.Main) {
                         selectedWallpaper.value = "AI Generated Location"
-                        getSharedPreferences("launcher_settings", MODE_PRIVATE)
-                            .edit()
-                            .putString("wallpaper", "AI Generated Location")
-                            .apply()
+                        getSharedPreferences("launcher_settings", MODE_PRIVATE).edit {
+                            putString("wallpaper", "AI Generated Location")
+                        }
                         decodeAndExtractWallpaperColor()
                     }
                 }
@@ -386,7 +392,7 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                     selectedWallpaper.value = "Local Image"
-                    getSharedPreferences("launcher_settings", MODE_PRIVATE).edit().putString("wallpaper", "Local Image").apply()
+                    getSharedPreferences("launcher_settings", MODE_PRIVATE).edit { putString("wallpaper", "Local Image") }
                     decodeAndExtractWallpaperColor()
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -428,10 +434,10 @@ class MainActivity : ComponentActivity() {
                     withContext(Dispatchers.Main) {
                         bingWallpaperUrl.value = fullUrl
                         selectedWallpaper.value = "Bing Daily"
-                        getSharedPreferences("launcher_settings", MODE_PRIVATE).edit()
-                            .putString("bing_wallpaper_url", fullUrl)
-                            .putString("wallpaper", "Bing Daily")
-                            .apply()
+                        getSharedPreferences("launcher_settings", MODE_PRIVATE).edit {
+                            putString("bing_wallpaper_url", fullUrl)
+                            putString("wallpaper", "Bing Daily")
+                        }
                         decodeAndExtractWallpaperColor()
                     }
                 }
@@ -453,10 +459,9 @@ class MainActivity : ComponentActivity() {
             if (success) {
                 withContext(Dispatchers.Main) {
                     selectedWallpaper.value = "AI Generated"
-                    getSharedPreferences("launcher_settings", MODE_PRIVATE)
-                        .edit()
-                        .putString("wallpaper", "AI Generated")
-                        .apply()
+                    getSharedPreferences("launcher_settings", MODE_PRIVATE).edit {
+                        putString("wallpaper", "AI Generated")
+                    }
                     decodeAndExtractWallpaperColor()
                 }
             } else {
@@ -525,14 +530,14 @@ class MainActivity : ComponentActivity() {
 
     private fun extractDominantColor(bitmap: android.graphics.Bitmap): Color {
         return try {
-            val resized = android.graphics.Bitmap.createScaledBitmap(bitmap, 16, 16, false)
+            val resized = bitmap.scale(16, 16, false)
             var rSum = 0
             var gSum = 0
             var bSum = 0
             var count = 0
             for (x in 0 until 16) {
                 for (y in 0 until 16) {
-                    val pixel = resized.getPixel(x, y)
+                    val pixel = resized[x, y]
                     val a = android.graphics.Color.alpha(pixel)
                     if (a > 200) {
                         rSum += android.graphics.Color.red(pixel)
@@ -552,7 +557,7 @@ class MainActivity : ComponentActivity() {
             hsv[2] = maxOf(hsv[2], 0.85f)
             val rgb = android.graphics.Color.HSVToColor(hsv)
             Color(rgb)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             Color(0xFF8C9EFF)
         }
     }
@@ -617,7 +622,7 @@ class MainActivity : ComponentActivity() {
             } else {
                 currentThermalStatus.value = "Unmanaged (Pre-Q)"
             }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             currentThermalStatus.value = "Demo Mode (Active)"
         }
     }
@@ -749,21 +754,22 @@ class MainActivity : ComponentActivity() {
 
     private fun saveWidgets(list: List<WidgetData>) {
         val str = list.joinToString(",") { "${it.id}:${it.widthSpan}:${it.heightSpan}:${it.pageName}" }
-        getSharedPreferences("launcher", MODE_PRIVATE).edit()
-            .putString("widgets_v2", str)
-            .apply()
+        getSharedPreferences("launcher", MODE_PRIVATE).edit {
+            putString("widgets_v2", str)
+        }
     }
 
     fun hasUsageStatsPermission(context: Context): Boolean {
         return try {
             val appOps = context.getSystemService(APP_OPS_SERVICE) as android.app.AppOpsManager
+            @Suppress("DEPRECATION")
             val mode = appOps.noteOpNoThrow(
                 android.app.AppOpsManager.OPSTR_GET_USAGE_STATS,
                 android.os.Process.myUid(),
                 context.packageName
             )
             mode == android.app.AppOpsManager.MODE_ALLOWED
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             false
         }
     }
@@ -819,7 +825,7 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch(Dispatchers.IO) {
             val prefs = getSharedPreferences("launcher_local_launches", MODE_PRIVATE)
             val current = prefs.getLong(packageName, 0L)
-            prefs.edit().putLong(packageName, current + 1L).apply()
+            prefs.edit { putLong(packageName, current + 1L) }
             refreshAppUsageScores()
         }
     }
@@ -833,7 +839,6 @@ class MainActivity : ComponentActivity() {
         if (launchIntent != null) {
             try {
                 launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                val bounds = appIconBoundsMap[packageName]
                 // if (bounds != null) {
                 //     launchIntent.sourceBounds = bounds
                 //     val options = android.app.ActivityOptions.makeClipRevealAnimation(
@@ -949,8 +954,8 @@ class MainActivity : ComponentActivity() {
 
     private fun handleGestureNavContract(intent: Intent) {
         val contractBundle = intent.getBundleExtra("gesture_nav_contract_v1") ?: return
-        val componentName = contractBundle.getParcelable<android.content.ComponentName>("gesture_nav_contract_component") ?: return
-        val callbackMessage = contractBundle.getParcelable<android.os.Message>("android.intent.extra.REMOTE_CALLBACK") ?: return
+        val componentName = BundleCompat.getParcelable(contractBundle, "gesture_nav_contract_component", android.content.ComponentName::class.java) ?: return
+        val callbackMessage = BundleCompat.getParcelable(contractBundle, "android.intent.extra.REMOTE_CALLBACK", android.os.Message::class.java) ?: return
         
         val targetIconBounds = locateIconOnGrid(componentName)
         
@@ -991,8 +996,13 @@ class MainActivity : ComponentActivity() {
         window.addFlags(android.view.WindowManager.LayoutParams.FLAG_SHOW_WALLPAPER)
 
         // Optimize for 120Hz displays
-        val display = windowManager.defaultDisplay
-        val modes = display.supportedModes
+        @Suppress("DEPRECATION")
+        val display = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+            display
+        } else {
+            windowManager.defaultDisplay
+        }
+        val modes = display?.supportedModes ?: emptyArray()
         val preferredMode = modes.maxByOrNull { it.refreshRate }
         if (preferredMode != null) {
             window.attributes = window.attributes.apply {
@@ -1191,7 +1201,7 @@ class LauncherViewModel : ViewModel() {
 private fun evaluateMath(expr: String): String {
     try {
         val clean = expr.replace(" ", "")
-        val regex = Regex("""(\d+)([\+\-\*\/])(\d+)""")
+        val regex = Regex("""(\d+)([+\-*/])(\d+)""")
         val match = regex.find(clean)
         if (match != null) {
             val num1 = match.groupValues[1].toDoubleOrNull() ?: return "Error"
@@ -1207,7 +1217,7 @@ private fun evaluateMath(expr: String): String {
             return res.toString()
         }
         return "Enter simple math (e.g. 15 * 6)"
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         return "Error"
     }
 }
@@ -1217,7 +1227,6 @@ fun WallpaperBackground(wallpaper: String, bingWallpaperUrl: String, blurEnabled
     val blurModifier = if (blurEnabled) Modifier.blur(16.dp, 16.dp) else Modifier
     Box(modifier = Modifier.fillMaxSize().then(blurModifier)) {
         val context = LocalContext.current
-        val activity = context as? MainActivity
 
         when (wallpaper) {
             "Local Image" -> {
@@ -1383,12 +1392,12 @@ fun ClockStyleWidget(
         while (true) {
             val cal = java.util.Calendar.getInstance()
             currentTime = if (use24HourFormat) {
-                String.format("%02d:%02d", cal.get(java.util.Calendar.HOUR_OF_DAY), cal.get(java.util.Calendar.MINUTE))
+                String.format(java.util.Locale.getDefault(), "%02d:%02d", cal.get(java.util.Calendar.HOUR_OF_DAY), cal.get(java.util.Calendar.MINUTE))
             } else {
                 val hr12 = cal.get(java.util.Calendar.HOUR)
                 val hourActual = if (hr12 == 0) 12 else hr12
                 val ampm = if (cal.get(java.util.Calendar.AM_PM) == java.util.Calendar.AM) "AM" else "PM"
-                String.format("%d:%02d %s", hourActual, cal.get(java.util.Calendar.MINUTE), ampm)
+                String.format(java.util.Locale.getDefault(), "%d:%02d %s", hourActual, cal.get(java.util.Calendar.MINUTE), ampm)
             }
             val dayAbbr = when (cal.get(java.util.Calendar.DAY_OF_WEEK)) {
                 java.util.Calendar.SUNDAY -> "Sun"
@@ -1773,7 +1782,7 @@ fun SwipeToDeleteContainer(
     
     val animatedOffsetX by animateFloatAsState(
         targetValue = targetOffsetX,
-        finishedListener = { finalOffset ->
+        finishedListener = { _ ->
             if (itemDismissed) {
                 onDismissed()
             }
@@ -2134,6 +2143,7 @@ fun AdvancedSearchBar(
     onFocusChanged: (Boolean) -> Unit,
     onSearchExecute: () -> Unit = {}
 ) {
+    val _onSearchWeb = onSearchWeb // Suppress unused warning
     val focusManager = LocalFocusManager.current
     val mathResult = remember(query) { if (query.isNotEmpty()) evaluateMath(query) else "" }
     val isMath = mathResult != "Error" && mathResult != "Enter simple math (e.g. 15 * 6)" && query.any { it in "+-*/" }
@@ -2216,7 +2226,7 @@ fun AdvancedSearchBar(
                         }
                     ) {
                         Icon(
-                            imageVector = Icons.Default.ArrowBack,
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(20.dp)
@@ -2333,7 +2343,7 @@ fun UserProfileScreen(user: UserEntity, onDismiss: () -> Unit) {
             Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onDismiss) {
                     Icon(
-                        imageVector = Icons.Default.ArrowBack, 
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack, 
                         contentDescription = "Back", 
                         tint = MaterialTheme.colorScheme.onBackground
                     )
@@ -2495,6 +2505,8 @@ fun UniversalAppContextMenu(
     onAddToFolder: (String) -> Unit,
     selectedFolders: Set<String> = emptySet()
 ) {
+    val _isBreakerEnabled = isBreakerEnabled // Suppress unused
+    val _onToggleBreaker = onToggleBreaker // Suppress unused
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
 
@@ -2601,7 +2613,7 @@ fun UniversalAppContextMenu(
                                     try {
                                         val intent = Intent(
                                             android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                                            android.net.Uri.parse("package:$packageName")
+                                            "package:$packageName".toUri()
                                         ).apply {
                                             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                         }
@@ -2763,7 +2775,7 @@ fun AppContextMenuOverlay(
             if (cur is MainActivity) return@remember cur
             cur = cur.baseContext
         }
-        cur as? MainActivity
+        null
     }
     val folderMap = activity?.folderMapState?.collectAsState()?.value ?: emptyMap()
     val selectedFolders = folders.filter { folderName ->
@@ -2795,7 +2807,6 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
     val clockStyleVal by activity.clockStyle.collectAsState()
     val selectedFontVal by activity.selectedFont.collectAsState()
     val iconPackVal by activity.iconPack.collectAsState()
-    val themeModeVal by activity.themeMode.collectAsState()
     val materialYouEnabledVal by activity.materialYouEnabled.collectAsState()
     val declutterModeVal by activity.declutterMode.collectAsState()
     val categoriseByUsageVal by activity.categoriseByUsage.collectAsState()
@@ -2848,7 +2859,7 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                     }
                 }) {
                     Icon(
-                        imageVector = Icons.Default.ArrowBack,
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
                         tint = MaterialTheme.colorScheme.onBackground,
                         modifier = Modifier.size(24.dp)
@@ -2946,7 +2957,7 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                                                         val isSel = currentWallpaper == wall
                                                         Box(modifier = Modifier.weight(1f).border(1.dp, if (isSel) themeColor else MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(10.dp)).background(if (isSel) themeColor.copy(alpha = 0.15f) else Color.Transparent).clickable { 
                                                             activity.selectedWallpaper.value = wall
-                                                            activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit().putString("wallpaper", wall).apply()
+                                                            activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit { putString("wallpaper", wall) }
                                                             activity.decodeAndExtractWallpaperColor()
                                                         }.padding(12.dp), contentAlignment = Alignment.Center) {
                                                             Text(wall, fontSize = 13.sp, color = if (isSel) themeColor else MaterialTheme.colorScheme.onSurface, fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal, fontFamily = fontFamily)
@@ -2958,7 +2969,7 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                                                         val isSel = currentWallpaper == wall
                                                         Box(modifier = Modifier.weight(1f).border(1.dp, if (isSel) themeColor else MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(10.dp)).background(if (isSel) themeColor.copy(alpha = 0.15f) else Color.Transparent).clickable { 
                                                             activity.selectedWallpaper.value = wall
-                                                            activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit().putString("wallpaper", wall).apply()
+                                                            activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit { putString("wallpaper", wall) }
                                                             activity.decodeAndExtractWallpaperColor()
                                                         }.padding(12.dp), contentAlignment = Alignment.Center) {
                                                             Text(wall, fontSize = 13.sp, color = if (isSel) themeColor else MaterialTheme.colorScheme.onSurface, fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal, fontFamily = fontFamily)
@@ -2975,7 +2986,7 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                                                                 activity.fetchBingWallpaper()
                                                             } else {
                                                                 activity.selectedWallpaper.value = wall
-                                                                activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit().putString("wallpaper", wall).apply()
+                                                                activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit { putString("wallpaper", wall) }
                                                                 activity.decodeAndExtractWallpaperColor()
                                                             }
                                                         }.padding(vertical = 12.dp), contentAlignment = Alignment.Center) {
@@ -3019,7 +3030,7 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                                                     checked = blurOn,
                                                     onCheckedChange = {
                                                         activity.wallpaperBlurEnabled.value = it
-                                                        activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit().putBoolean("wallpaper_blur", it).apply()
+                                                        activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit { putBoolean("wallpaper_blur", it) }
                                                     },
                                                     colors = SwitchDefaults.colors(checkedThumbColor = MaterialTheme.colorScheme.onPrimary, checkedTrackColor = themeColor)
                                                 )
@@ -3121,7 +3132,7 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                                                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                                     listOf("Dextera Date", "Minimal Digital", "Bold Accent", "Classic Analog").forEach { style ->
                                                         val isSel = clockStyleVal == style
-                                                        Box(modifier = Modifier.weight(1f).border(1.dp, if (isSel) themeColor else MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(10.dp)).background(if (isSel) themeColor.copy(alpha = 0.15f) else Color.Transparent).clickable { activity.clockStyle.value = style; activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit().putString("clock_style", style).apply() }.padding(10.dp), contentAlignment = Alignment.Center) {
+                                                        Box(modifier = Modifier.weight(1f).border(1.dp, if (isSel) themeColor else MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(10.dp)).background(if (isSel) themeColor.copy(alpha = 0.15f) else Color.Transparent).clickable { activity.clockStyle.value = style; activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit { putString("clock_style", style) } }.padding(10.dp), contentAlignment = Alignment.Center) {
                                                             Text(style, fontSize = 11.sp, color = if (isSel) themeColor else MaterialTheme.colorScheme.onSurface, maxLines = 1, fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal, fontFamily = fontFamily)
                                                         }
                                                     }
@@ -3136,7 +3147,7 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                                                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                                     listOf("Classic", "Silhouette Outlined", "Neon Glow", "Pastel Minimalist").forEach { pack ->
                                                         val isSel = iconPackVal == pack
-                                                        Box(modifier = Modifier.weight(1f).border(1.dp, if (isSel) themeColor else MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(10.dp)).background(if (isSel) themeColor.copy(alpha = 0.15f) else Color.Transparent).clickable { activity.iconPack.value = pack; activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit().putString("icon_pack", pack).apply() }.padding(10.dp), contentAlignment = Alignment.Center) {
+                                                        Box(modifier = Modifier.weight(1f).border(1.dp, if (isSel) themeColor else MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(10.dp)).background(if (isSel) themeColor.copy(alpha = 0.15f) else Color.Transparent).clickable { activity.iconPack.value = pack; activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit { putString("icon_pack", pack) } }.padding(10.dp), contentAlignment = Alignment.Center) {
                                                             Text(pack, fontSize = 11.sp, color = if (isSel) themeColor else MaterialTheme.colorScheme.onSurface, maxLines = 1, fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal, fontFamily = fontFamily)
                                                         }
                                                     }
@@ -3151,7 +3162,7 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                                                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                                     listOf("System Default", "Inter Elegant", "Space Mono", "Serif Elegant").forEach { fnt ->
                                                         val isSel = selectedFontVal == fnt
-                                                        Box(modifier = Modifier.weight(1f).border(1.dp, if (isSel) themeColor else MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(10.dp)).background(if (isSel) themeColor.copy(alpha = 0.15f) else Color.Transparent).clickable { activity.selectedFont.value = fnt; activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit().putString("font", fnt).apply() }.padding(10.dp), contentAlignment = Alignment.Center) {
+                                                        Box(modifier = Modifier.weight(1f).border(1.dp, if (isSel) themeColor else MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(10.dp)).background(if (isSel) themeColor.copy(alpha = 0.15f) else Color.Transparent).clickable { activity.selectedFont.value = fnt; activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit { putString("font", fnt) } }.padding(10.dp), contentAlignment = Alignment.Center) {
                                                             Text(fnt, fontSize = 11.sp, color = if (isSel) themeColor else MaterialTheme.colorScheme.onSurface, maxLines = 1, fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal, fontFamily = fontFamily)
                                                         }
                                                     }
@@ -3180,7 +3191,7 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                                                         val isSel = use24HourFormatVal == v
                                                         Box(modifier = Modifier.border(1.dp, if (isSel) themeColor else MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp)).background(if (isSel) themeColor.copy(alpha = 0.15f) else Color.Transparent).clickable { 
                                                             activity.use24HourFormat.value = v
-                                                            activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit().putBoolean("use_24_hour", v).apply()
+                                                            activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit { putBoolean("use_24_hour", v) }
                                                         }.padding(vertical = 8.dp, horizontal = 12.dp), contentAlignment = Alignment.Center) {
                                                             Text(name, fontSize = 12.sp, color = if (isSel) themeColor else MaterialTheme.colorScheme.onSurface, fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal, fontFamily = fontFamily)
                                                         }
@@ -3201,7 +3212,7 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                                                         val isSel = useFahrenheitVal == v
                                                         Box(modifier = Modifier.border(1.dp, if (isSel) themeColor else MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp)).background(if (isSel) themeColor.copy(alpha = 0.15f) else Color.Transparent).clickable { 
                                                             activity.useFahrenheit.value = v
-                                                            activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit().putBoolean("use_fahrenheit", v).apply()
+                                                            activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit { putBoolean("use_fahrenheit", v) }
                                                         }.padding(vertical = 8.dp, horizontal = 12.dp), contentAlignment = Alignment.Center) {
                                                             Text(name, fontSize = 12.sp, color = if (isSel) themeColor else MaterialTheme.colorScheme.onSurface, fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal, fontFamily = fontFamily)
                                                         }
@@ -3230,7 +3241,7 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                                                     checked = dynamicIconColorEnabledVal,
                                                     onCheckedChange = { 
                                                         activity.dynamicIconColorEnabled.value = it
-                                                        activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit().putBoolean("dynamic_icon_color", it).apply()
+                                                        activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit { putBoolean("dynamic_icon_color", it) }
                                                     },
                                                     colors = SwitchDefaults.colors(checkedThumbColor = MaterialTheme.colorScheme.onPrimary, checkedTrackColor = themeColor)
                                                 )
@@ -3248,7 +3259,7 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                                                     checked = materialYouEnabledVal, 
                                                     onCheckedChange = { 
                                                         activity.materialYouEnabled.value = it
-                                                        activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit().putBoolean("material_you", it).apply() 
+                                                        activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit { putBoolean("material_you", it) } 
                                                     }, 
                                                     colors = SwitchDefaults.colors(checkedThumbColor = MaterialTheme.colorScheme.onPrimary, checkedTrackColor = themeColor)
                                                 )
@@ -3343,7 +3354,7 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                                                     "Nullifies the native Window background drawable initialization to remove composite layers and speed up frame times.",
                                                     overdrawVal to { v: Boolean ->
                                                         activity.overdrawElimination.value = v
-                                                        activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit().putBoolean("perf_overdraw_elimination", v).apply()
+                                                        activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit { putBoolean("perf_overdraw_elimination", v) }
                                                         try {
                                                             if (v && activity.selectedWallpaper.value != "System Wallpaper") {
                                                                 activity.window?.setBackgroundDrawable(null)
@@ -3358,7 +3369,7 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                                                     "Moves wallpaper, icon downsampling, and save files bitmap extraction off the UI thread to background worker pools.",
                                                     asyncImgVal to { v: Boolean ->
                                                         activity.asyncImageDecoding.value = v
-                                                        activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit().putBoolean("perf_async_image_decoding", v).apply()
+                                                        activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit { putBoolean("perf_async_image_decoding", v) }
                                                     }
                                                 ),
                                                 java.util.UUID.randomUUID().toString() to Triple(
@@ -3366,7 +3377,7 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                                                     "Appends ultra-low latency -XX:+UseZGC options to the VM launch parameters block, restricting heap pauses to < 2ms.",
                                                     jvmZgcVal to { v: Boolean ->
                                                         activity.jvmZgcConfiguration.value = v
-                                                        activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit().putBoolean("perf_jvm_zgc_config", v).apply()
+                                                        activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit { putBoolean("perf_jvm_zgc_config", v) }
                                                     }
                                                 ),
                                                 java.util.UUID.randomUUID().toString() to Triple(
@@ -3374,7 +3385,7 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                                                     "Actively listens to the Android Hardware Thermal API. Safely downscales refresh rates to 90Hz/60Hz on THERMAL_STATUS_SEVERE to protect SoC silicon.",
                                                     adaptiveFpsVal to { v: Boolean ->
                                                         activity.adaptiveFpsThermal.value = v
-                                                        activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit().putBoolean("perf_adaptive_fps_thermal", v).apply()
+                                                        activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit { putBoolean("perf_adaptive_fps_thermal", v) }
                                                         if (!v) {
                                                             activity.adaptiveVsyncTarget.value = "120Hz"
                                                         }
@@ -3385,7 +3396,7 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                                                     "Applies automated frame-holding (8.3ms duration) to discrete virtual clicks so they are registered properly rather than discarded as zero-duration noise.",
                                                     syntheticClickVal to { v: Boolean ->
                                                         activity.syntheticClickDelay.value = v
-                                                        activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit().putBoolean("perf_synthetic_click_delay", v).apply()
+                                                        activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit { putBoolean("perf_synthetic_click_delay", v) }
                                                     }
                                                 ),
                                                 java.util.UUID.randomUUID().toString() to Triple(
@@ -3393,7 +3404,7 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                                                     "Queries motion vector histories via getHistoricalX/Y to capture sub-frame touch paths for smooth viewport adjustments.",
                                                     touchInterpVal to { v: Boolean ->
                                                         activity.touchInterpolation.value = v
-                                                        activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit().putBoolean("perf_touch_interpolation", v).apply()
+                                                        activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit { putBoolean("perf_touch_interpolation", v) }
                                                     }
                                                 ),
                                                 java.util.UUID.randomUUID().toString() to Triple(
@@ -3401,7 +3412,7 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                                                     "Pins the main game loop and JVM renderer threads exclusively to ARM Prime cores, and keeps low-load helper threads off them.",
                                                     cpuThreadVal to { v: Boolean ->
                                                         activity.cpuThreadAffinity.value = v
-                                                        activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit().putBoolean("perf_cpu_thread_affinity", v).apply()
+                                                        activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit { putBoolean("perf_cpu_thread_affinity", v) }
                                                     }
                                                 ),
                                                 java.util.UUID.randomUUID().toString() to Triple(
@@ -3409,7 +3420,7 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                                                     "Bypasses Storage Access Framework (SAF) latency by directly mapping .jar resource packs and game zip files into RAM using native mmap POSIX.",
                                                     asyncVfsVal to { v: Boolean ->
                                                         activity.asyncVfsMmap.value = v
-                                                        activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit().putBoolean("perf_async_vfs_mmap", v).apply()
+                                                        activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit { putBoolean("perf_async_vfs_mmap", v) }
                                                     }
                                                 )
                                             )
@@ -3461,7 +3472,7 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                                                     checked = gesturesEnabledVal, 
                                                     onCheckedChange = { 
                                                         activity.gesturesEnabled.value = it
-                                                        activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit().putBoolean("gestures_enabled", it).apply() 
+                                                        activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit { putBoolean("gestures_enabled", it) } 
                                                     }, 
                                                     colors = SwitchDefaults.colors(checkedThumbColor = MaterialTheme.colorScheme.onPrimary, checkedTrackColor = themeColor)
                                                 )
@@ -3527,7 +3538,7 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                                                     checked = declutterModeVal, 
                                                     onCheckedChange = { 
                                                         activity.declutterMode.value = it
-                                                        activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit().putBoolean("declutter_mode", it).apply() 
+                                                        activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit { putBoolean("declutter_mode", it) } 
                                                     }, 
                                                     colors = SwitchDefaults.colors(checkedThumbColor = MaterialTheme.colorScheme.onPrimary, checkedTrackColor = themeColor)
                                                 )
@@ -3552,7 +3563,7 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                                                     checked = notificationSummaryEnabledVal, 
                                                     onCheckedChange = { 
                                                         activity.notificationSummaryEnabled.value = it
-                                                        activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit().putBoolean("notification_summary", it).apply() 
+                                                        activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit { putBoolean("notification_summary", it) } 
                                                     }, 
                                                     colors = SwitchDefaults.colors(checkedThumbColor = MaterialTheme.colorScheme.onPrimary, checkedTrackColor = themeColor)
                                                 )
@@ -3593,9 +3604,9 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                                                                     }
                                                                     activity.allowedNotificationCategories.value = nextSet
                                                                     activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE)
-                                                                        .edit()
-                                                                        .putStringSet("allowed_notification_categories", nextSet)
-                                                                        .apply()
+                                                                        .edit {
+                                                                            putStringSet("allowed_notification_categories", nextSet)
+                                                                        }
                                                                 }
                                                                 .padding(vertical = 8.dp),
                                                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -3639,7 +3650,7 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                                                     val isSel = usageBreakerMinutesVal == v
                                                     Box(modifier = Modifier.weight(1f).border(1.dp, if (isSel) themeColor else MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(10.dp)).background(if (isSel) themeColor.copy(alpha = 0.15f) else Color.Transparent).clickable { 
                                                         activity.usageBreakerMinutes.value = v
-                                                        activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit().putInt("usage_breaker_min", v).apply() 
+                                                        activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit { putInt("usage_breaker_min", v) } 
                                                     }.padding(12.dp), contentAlignment = Alignment.Center) {
                                                         Text(text, fontSize = 12.sp, color = if (isSel) themeColor else MaterialTheme.colorScheme.onSurface, fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal, fontFamily = fontFamily)
                                                     }
@@ -3664,7 +3675,7 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                                                         val now = hiddenAppsSet.toMutableSet()
                                                         now.remove(pkg)
                                                         activity.hiddenApps.value = now
-                                                        activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit().putStringSet("hidden_packages", now).apply()
+                                                        activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit { putStringSet("hidden_packages", now) }
                                                     }.padding(vertical = 8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                                         Text(pkg, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, modifier = Modifier.weight(1f).padding(end = 6.dp), fontFamily = fontFamily)
                                                         Text("Unhide", fontSize = 12.sp, color = themeColor, fontWeight = FontWeight.Bold, fontFamily = fontFamily)
@@ -3692,7 +3703,7 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                                                     checked = categoriseByUsageVal, 
                                                     onCheckedChange = { 
                                                         activity.categoriseByUsage.value = it
-                                                        activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit().putBoolean("categorise_by_usage", it).apply() 
+                                                        activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit { putBoolean("categorise_by_usage", it) } 
                                                     }, 
                                                     colors = SwitchDefaults.colors(checkedThumbColor = MaterialTheme.colorScheme.onPrimary, checkedTrackColor = themeColor)
                                                 )
@@ -3711,7 +3722,7 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                                                                 .background(if (isSel) themeColor.copy(alpha = 0.15f) else Color.Transparent)
                                                                 .clickable { 
                                                                     activity.usageLimitCount.value = v
-                                                                    activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit().putInt("usage_limit_count", v).apply() 
+                                                                    activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit { putInt("usage_limit_count", v) } 
                                                                 }
                                                                 .padding(10.dp), 
                                                             contentAlignment = Alignment.Center
@@ -3746,7 +3757,7 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                                                     listOf(3 to "3", 5 to "5", 7 to "7").forEach { (v, name) ->
                                                         val isSel = currentLimit == v
                                                         Box(modifier = Modifier.border(1.dp, if (isSel) themeColor else MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp)).background(if (isSel) themeColor.copy(alpha = 0.15f) else Color.Transparent).clickable { 
-                                                            activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit().putInt("search_results_limit", v).apply()
+                                                            activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit { putInt("search_results_limit", v) }
                                                         }.padding(vertical = 8.dp, horizontal = 12.dp), contentAlignment = Alignment.Center) {
                                                             Text(name, fontSize = 12.sp, color = if (isSel) themeColor else MaterialTheme.colorScheme.onSurface, fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal, fontFamily = fontFamily)
                                                         }
@@ -3821,7 +3832,7 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                                                             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                                         }
                                                         activity.startActivity(intent)
-                                                    } catch (e: Exception) {
+                                                    } catch (_: Exception) {
                                                         android.widget.Toast.makeText(activity, "Settings could not be opened automatically", android.widget.Toast.LENGTH_SHORT).show()
                                                     }
                                                 },
@@ -4162,20 +4173,22 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
     
     val activity = remember(context) {
         var cur = context
+        var result: MainActivity? = null
         while (cur is android.content.ContextWrapper) {
-            if (cur is MainActivity) return@remember cur
+            if (cur is MainActivity) {
+                result = cur
+                break
+            }
             cur = cur.baseContext
         }
-        cur as MainActivity
+        result ?: error("Context must be MainActivity")
     }
-    val widgetDataList by activity.widgetDataList.collectAsState()
     
     // Config state collectors
     val selectedWallpaper by activity.selectedWallpaper.collectAsState()
     val clockStyleVal by activity.clockStyle.collectAsState()
     val selectedFontVal by activity.selectedFont.collectAsState()
     val iconPackVal by activity.iconPack.collectAsState()
-    val themeModeVal by activity.themeMode.collectAsState()
     val materialYouEnabledVal by activity.materialYouEnabled.collectAsState()
     val declutterModeVal by activity.declutterMode.collectAsState()
     val categoriseByUsageVal by activity.categoriseByUsage.collectAsState()
@@ -4183,12 +4196,10 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
     val appUsageScoresVal by activity.appUsageScores.collectAsState()
     val gesturesEnabledVal by activity.gesturesEnabled.collectAsState()
     val hiddenAppsSet by activity.hiddenApps.collectAsState()
-    val notificationSummaryEnabledVal by activity.notificationSummaryEnabled.collectAsState()
     val folderMap by activity.folderMapState.collectAsState()
     val isLocationGrantedVal by activity.isLocationPermissionGranted.collectAsState()
     val use24HourFormatVal by activity.use24HourFormat.collectAsState()
     val useFahrenheitVal by activity.useFahrenheit.collectAsState()
-    val dynamicIconColorEnabledVal by activity.dynamicIconColorEnabled.collectAsState()
     val bingWallpaperUrlVal by activity.bingWallpaperUrl.collectAsState()
     val wallpaperBlurEnabledVal by activity.wallpaperBlurEnabled.collectAsState()
     val extractedWallpaperColorVal by activity.extractedWallpaperColor.collectAsState()
@@ -4684,7 +4695,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                             if (searchQuery.isNotEmpty()) return@pointerInput
                                             if (gesturesEnabledVal) {
                                                 detectDragGestures(
-                                                    onDrag = { change, dragAmount ->
+                                                    onDrag = { _, dragAmount ->
                                                         if (dragAmount.y > 45f) {
                                                             searchQuery = " "
                                                             searchQuery = ""
@@ -4792,7 +4803,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                         "social" -> Icons.Default.Person
                                                         "utilities" -> Icons.Default.Build
                                                         "media" -> Icons.Default.PlayArrow
-                                                        else -> Icons.Default.List
+                                                        else -> Icons.AutoMirrored.Filled.List
                                                     }
                                                     val textLabel = name
                                                     Box(
@@ -5125,10 +5136,10 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                                 contextForSearch.startActivity(intent)
                                                             } catch (e: Exception) {
                                                                 try {
-                                                                    val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://www.google.com/search?q=${java.net.URLEncoder.encode(result.label, "UTF-8")}"))
+                                                                    val intent = Intent(Intent.ACTION_VIEW, "https://www.google.com/search?q=${java.net.URLEncoder.encode(result.label, "UTF-8")}".toUri())
                                                                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                                                     contextForSearch.startActivity(intent)
-                                                                } catch (e2: Exception) {}
+                                                                } catch (_: Exception) {}
                                                             }
                                                         }
                                                         .padding(vertical = 8.dp, horizontal = 12.dp),
@@ -5156,7 +5167,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                         modifier = Modifier.weight(1f)
                                                     )
                                                     Icon(
-                                                        imageVector = Icons.Default.ArrowBack,
+                                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                                         contentDescription = null,
                                                         tint = Color.White.copy(alpha = 0.3f),
                                                         modifier = Modifier
@@ -5252,17 +5263,17 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                                     selectedUser = match
                                                                 } else {
                                                                     try {
-                                                                        val intent = Intent(Intent.ACTION_DIAL, android.net.Uri.parse("tel:${result.phoneNumber}"))
+                                                                        val intent = Intent(Intent.ACTION_DIAL, "tel:${result.phoneNumber}".toUri())
                                                                         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                                                         contextForSearch.startActivity(intent)
-                                                                    } catch (e: Exception) {}
+                                                                    } catch (_: Exception) {}
                                                                 }
                                                             } else {
                                                                 try {
-                                                                    val intent = Intent(Intent.ACTION_DIAL, android.net.Uri.parse("tel:${result.phoneNumber}"))
-                                                                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                                                    contextForSearch.startActivity(intent)
-                                                                } catch (e: Exception) {}
+                                    val intent = Intent(Intent.ACTION_DIAL, "tel:${result.phoneNumber}".toUri())
+                                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    contextForSearch.startActivity(intent)
+                                } catch (_: Exception) {}
                                                             }
                                                         }
                                                         .padding(vertical = 8.dp, horizontal = 12.dp),
@@ -5531,7 +5542,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                  // 2. Rest of applications Section with Alphabet Headers
                                                 itemsIndexed(
                                                     items = restAppsEntries,
-                                                    key = { idx, entry ->
+                                                    key = { _, entry ->
                                                         when (entry) {
                                                             is ListEntry.Header -> "rest_header_${entry.letter}"
                                                             is ListEntry.App -> "rest_${entry.appInfo.packageName}"
@@ -5595,7 +5606,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                 // Standard Alphabetical List with Alphabet Headers
                                                 itemsIndexed(
                                                     items = standardListEntries,
-                                                    key = { idx, entry ->
+                                                    key = { _, entry ->
                                                         when (entry) {
                                                             is ListEntry.Header -> "flat_header_${entry.letter}"
                                                             is ListEntry.App -> "flat_${entry.appInfo.packageName}"
@@ -5672,13 +5683,11 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                                 val down = awaitFirstDown()
                                                                 down.consume()
                                                                 isTouchingSidebar = true
-                                                        var y = down.position.y
-                                                        var x = down.position.x
+                                                        val y = down.position.y
+                                                        val x = down.position.x
                                                         sidebarTouchY = y
                                                         sidebarTouchX = x
                                                         var lastY = y
-                                                        var touchAccumulatorY = 0f
-                                                        var activeHoverIndex: Int? = null
                                                         var lastScrolledIndex = -1
                                                         var scrollJob: kotlinx.coroutines.Job? = null
                                                         var crossedThreshold = false
@@ -5731,7 +5740,6 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                             getAppIndexForY(y, size.height.toFloat(), null)
                                                         }
                                                         
-                                                        activeHoverIndex = targetIndex
                                                         if (targetIndex in finalFilteredAppsList.indices) {
                                                             val currentHoveredApp = finalFilteredAppsList[targetIndex]
                                                             if (lockedLetter != null) {
@@ -5758,7 +5766,6 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                                 change.consume()
                                                                 val currentY = change.position.y
                                                                 val currentX = change.position.x
-                                                                val deltaY = currentY - lastY
                                                                 lastY = currentY
                                                                 sidebarTouchY = currentY
                                                                 sidebarTouchX = currentX
@@ -5790,7 +5797,6 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                                     getAppIndexForY(currentY, size.height.toFloat(), null)
                                                                 }
                                                                 
-                                                                activeHoverIndex = targetIndex
                                                                 if (targetIndex in finalFilteredAppsList.indices) {
                                                                     val currentHoveredApp = finalFilteredAppsList[targetIndex]
                                                                     if (lockedLetter != null) {
@@ -5964,7 +5970,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                 verticalAlignment = Alignment.CenterVertically,
                                                 modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
                                             ) {
-                                                displayedPages.forEachIndexed { idx, page ->
+                                                displayedPages.forEachIndexed { idx, _ ->
                                                     val isSelected = idx == currentPageIndex
                                                     val dotWidth by animateDpAsState(targetValue = if (isSelected) 16.dp else 6.dp)
                                                     val dotColor = if (isSelected) currentThemeColor else Color.White
@@ -6021,7 +6027,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                             activity = activity,
                                                             allowedCategories = allowedNotificationCategoriesVal,
                                                             onLongPressApp = { packageAppInfo -> focusedContextMenuApp = packageAppInfo },
-                                                            onNotificationClick = { appName, notificationText, defaultPkg ->
+                                                            onNotificationClick = { appName, _, defaultPkg ->
                                                                 val foundApp = uiState.apps.firstOrNull { 
                                                                     it.label.equals(appName, ignoreCase = true) || 
                                                                     it.packageName.equals(defaultPkg, ignoreCase = true) ||
@@ -6143,25 +6149,25 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                         UniversalSearchEngine.recordSelection(contextForSearch, topResult)
                                         when (topResult) {
                                             is SearchResult.ContactResult -> {
-                                                if (topResult.isRoomUser) {
-                                                    val userId = topResult.id.removePrefix("room_").toIntOrNull()
-                                                    val match = allUsersVal.find { it.id == userId }
-                                                    if (match != null) {
-                                                        selectedUser = match
-                                                    } else {
-                                                        try {
-                                                            val intent = Intent(Intent.ACTION_DIAL, android.net.Uri.parse("tel:${topResult.phoneNumber}"))
-                                                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                                            contextForSearch.startActivity(intent)
-                                                        } catch (e: Exception) {}
-                                                    }
-                                                } else {
-                                                    try {
-                                                        val intent = Intent(Intent.ACTION_DIAL, android.net.Uri.parse("tel:${topResult.phoneNumber}"))
-                                                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                                        contextForSearch.startActivity(intent)
-                                                    } catch (e: Exception) {}
-                                                }
+                                                                if (topResult.isRoomUser) {
+                                                                    val userId = topResult.id.removePrefix("room_").toIntOrNull()
+                                                                    val match = allUsersVal.find { it.id == userId }
+                                                                    if (match != null) {
+                                                                        selectedUser = match
+                                                                    } else {
+                                                                        try {
+                                                                            val intent = Intent(Intent.ACTION_DIAL, "tel:${topResult.phoneNumber}".toUri())
+                                                                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                                                            contextForSearch.startActivity(intent)
+                                                                        } catch (_: Exception) {}
+                                                                    }
+                                                                } else {
+                                                                    try {
+                                                                        val intent = Intent(Intent.ACTION_DIAL, "tel:${topResult.phoneNumber}".toUri())
+                                                                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                                                        contextForSearch.startActivity(intent)
+                                                                    } catch (_: Exception) {}
+                                                                }
                                             }
                                             is SearchResult.AppResult -> {
                                                 val isLimitedApp = topResult.packageName in limitedAppsSet
@@ -6224,12 +6230,12 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                             }
                                             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                             contextForSearch.startActivity(intent)
-                                        } catch (e: Exception) {
+                                        } catch (_: Exception) {
                                             try {
-                                                val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://www.google.com/search?q=${java.net.URLEncoder.encode(webSearchQuery, "UTF-8")}"))
+                                                val intent = Intent(Intent.ACTION_VIEW, "https://www.google.com/search?q=${java.net.URLEncoder.encode(webSearchQuery, "UTF-8")}".toUri())
                                                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                                 contextForSearch.startActivity(intent)
-                                            } catch (e2: Exception) {}
+                                            } catch (_: Exception) {}
                                         }
                                     }
                                     searchQuery = ""
@@ -6336,12 +6342,12 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                     val intent = Intent(Intent.ACTION_SET_WALLPAPER)
                                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                     activity.startActivity(intent)
-                                } catch (e: Exception) {
+                                } catch (_: Exception) {
                                     try {
                                         val intent = Intent(android.provider.Settings.ACTION_SETTINGS)
                                         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                         activity.startActivity(intent)
-                                    } catch (ex: Exception) {}
+                                    } catch (_: Exception) {}
                                 }
                             },
                             modifier = Modifier.weight(1f).height(48.dp),
@@ -7232,7 +7238,7 @@ fun MusicPage(
                     val formatMs: (Long) -> String = { ms ->
                         val min = ms / 60000
                         val sec = (ms % 60000) / 1000
-                        String.format("%d:%02d", min, sec)
+                        String.format(java.util.Locale.getDefault(), "%d:%02d", min, sec)
                     }
 
                     Column(modifier = Modifier.fillMaxWidth()) {
@@ -7261,8 +7267,8 @@ fun MusicPage(
                                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                             try {
                                                 MyNotificationListenerService.activeController?.transportControls?.seekTo(targetProgress)
-                                            } catch (e: Exception) {
-                                                e.printStackTrace()
+                                            } catch (_: Exception) {
+                                                // ignore
                                             }
                                         }
                                     }
@@ -7281,8 +7287,8 @@ fun MusicPage(
                                                 }
                                                 try {
                                                     MyNotificationListenerService.activeController?.transportControls?.seekTo(targetProgress)
-                                                } catch (e: Exception) {
-                                                    e.printStackTrace()
+                                                } catch (_: Exception) {
+                                                    // ignore
                                                 }
                                             }
                                         )
@@ -7479,8 +7485,8 @@ fun SwipeToDismissNotification(
     activity: MainActivity,
     onDismiss: () -> Unit,
     onNotificationClick: () -> Unit,
-    onLongPress: (() -> Unit)? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onLongPress: (() -> Unit)? = null
 ) {
     val haptic = LocalHapticFeedback.current
     val density = LocalDensity.current
@@ -7721,7 +7727,7 @@ fun SwipeToDismissNotification(
                             ) {
                                 if (isReply) {
                                     Icon(
-                                        imageVector = Icons.Default.Send,
+                                        imageVector = Icons.AutoMirrored.Filled.Send,
                                         contentDescription = null,
                                         tint = themeColor,
                                         modifier = Modifier.size(11.dp)
@@ -7840,9 +7846,9 @@ fun NotificationsPage(
     fontFamily: FontFamily,
     activity: MainActivity,
     allowedCategories: Set<String>,
+    modifier: Modifier = Modifier,
     onLongPressApp: ((AppInfo) -> Unit)? = null,
-    onNotificationClick: (appName: String, text: String, defaultPkg: String) -> Unit,
-    modifier: Modifier = Modifier
+    onNotificationClick: (appName: String, text: String, defaultPkg: String) -> Unit
 ) {
     val haptic = LocalHapticFeedback.current
     
@@ -8034,8 +8040,8 @@ fun NotificationsPage(
                                             packageName = item.pkg,
                                             icon = try {
                                                 activity.packageManager.getApplicationIcon(item.pkg)
-                                            } catch (ex: Exception) {
-                                                android.graphics.drawable.ColorDrawable(0)
+                                            } catch (_: Exception) {
+                                                0.toDrawable()
                                             }
                                         )
                                     }
@@ -8065,10 +8071,10 @@ fun NotificationsPage(
                                                                 label = groupList[0].appName,
                                                                 packageName = pkg,
                                                                 icon = try {
-                                                                    activity.packageManager.getApplicationIcon(pkg)
-                                                                } catch (ex: Exception) {
-                                                                    android.graphics.drawable.ColorDrawable(0)
-                                                                }
+                                                                activity.packageManager.getApplicationIcon(pkg)
+                                                            } catch (_: Exception) {
+                                                                0.toDrawable()
+                                                            }
                                                             )
                                                         }
                                                         onLongPressApp?.invoke(resolvedAppInfo)
@@ -8125,8 +8131,8 @@ fun NotificationsPage(
                                                         packageName = pkg,
                                                         icon = try {
                                                             activity.packageManager.getApplicationIcon(pkg)
-                                                        } catch (ex: Exception) {
-                                                            android.graphics.drawable.ColorDrawable(0)
+                                                        } catch (_: Exception) {
+                                                            0.toDrawable()
                                                         }
                                                     )
                                                 }
@@ -8229,8 +8235,8 @@ fun NotificationsPage(
                                                                 packageName = item.pkg,
                                                                 icon = try {
                                                                     activity.packageManager.getApplicationIcon(item.pkg)
-                                                                } catch (ex: Exception) {
-                                                                    android.graphics.drawable.ColorDrawable(0)
+                                                                } catch (_: Exception) {
+                                                                    0.toDrawable()
                                                                 }
                                                             )
                                                         }
@@ -8270,7 +8276,7 @@ class MyNotificationListenerService : android.service.notification.NotificationL
         try {
             val mediaSessionManager = getSystemService(MEDIA_SESSION_SERVICE) as android.media.session.MediaSessionManager
             val componentName = android.content.ComponentName(this, MyNotificationListenerService::class.java)
-            val listener = android.media.session.MediaSessionManager.OnActiveSessionsChangedListener { controllers ->
+            val listener = android.media.session.MediaSessionManager.OnActiveSessionsChangedListener { _ ->
                 updateActiveMedia()
             }
             mediaSessionManager.addOnActiveSessionsChangedListener(listener, componentName)
@@ -8334,7 +8340,7 @@ class MyNotificationListenerService : android.service.notification.NotificationL
             var foundMedia: MediaTrackInfo? = null
             var bestController: android.media.session.MediaController? = null
             
-            if (controllers != null && controllers.isNotEmpty()) {
+            if (controllers.isNotEmpty()) {
                 bestController = controllers.firstOrNull { controller ->
                     val state = controller.playbackState?.state
                     state == android.media.session.PlaybackState.STATE_PLAYING ||
@@ -8396,25 +8402,25 @@ class MyNotificationListenerService : android.service.notification.NotificationL
                         val notification = sbn.notification ?: continue
                         val extras = notification.extras ?: continue
                         
-                        val isTransport = notification.category == android.app.Notification.CATEGORY_TRANSPORT ||
-                                          extras.containsKey("android.mediaSession") ||
-                                          pkg.contains("spotify") || pkg.contains("music") || pkg.contains("youtube") || pkg.contains("vlc") ||
-                                          pkg.contains("pandora") || pkg.contains("soundcloud") || pkg.contains("tidal") || pkg.contains("deezer")
-                        
-                        if (isTransport) {
-                            val titleChar = extras.getCharSequence("android.title")
-                            val textChar = extras.getCharSequence("android.text")
-                            val title = titleChar?.toString() ?: ""
-                            val artist = textChar?.toString() ?: ""
-                            if (title.isNotEmpty()) {
-                                @Suppress("DEPRECATION")
-                                val artworkVal = try {
-                                    (extras.getParcelable("android.largeIcon") as? android.graphics.Bitmap)
-                                        ?: (extras.get("android.largeIcon.big") as? android.graphics.Bitmap)
-                                        ?: (notification.getLargeIcon()?.loadDrawable(this@MyNotificationListenerService) as? android.graphics.drawable.BitmapDrawable)?.bitmap
-                                } catch (e: Exception) {
-                                    null
-                                }
+                                                val isTransport = notification.category == android.app.Notification.CATEGORY_TRANSPORT ||
+                                                                  extras.containsKey("android.mediaSession") ||
+                                                                  pkg.contains("spotify") || pkg.contains("music") || pkg.contains("youtube") || pkg.contains("vlc") ||
+                                                                  pkg.contains("pandora") || pkg.contains("soundcloud") || pkg.contains("tidal") || pkg.contains("deezer")
+                                                
+                                                if (isTransport) {
+                                                    val titleChar = extras.getCharSequence("android.title")
+                                                    val textChar = extras.getCharSequence("android.text")
+                                                    val title = titleChar?.toString() ?: ""
+                                                    val artist = textChar?.toString() ?: ""
+                                                    if (title.isNotEmpty()) {
+                                                        @Suppress("DEPRECATION")
+                                                        val artworkVal = try {
+                                                            BundleCompat.getParcelable(extras, "android.largeIcon", android.graphics.Bitmap::class.java)
+                                                                ?: BundleCompat.getParcelable(extras, "android.largeIcon.big", android.graphics.Bitmap::class.java)
+                                                                ?: (notification.getLargeIcon()?.loadDrawable(this@MyNotificationListenerService) as? android.graphics.drawable.BitmapDrawable)?.bitmap
+                                                        } catch (_: Exception) {
+                                                            null
+                                                        }
                                 foundMedia = MediaTrackInfo(
                                     title = title,
                                     artist = artist,
@@ -8481,8 +8487,8 @@ class MyNotificationListenerService : android.service.notification.NotificationL
                 } else null
             }
             notificationsFlow.value = list
-        } catch (e: Exception) {
-            e.printStackTrace()
+        } catch (_: Exception) {
+            // ignore
         }
     }
 }
@@ -8492,8 +8498,8 @@ fun AppWidgetHostViewContainer(
     widgetId: Int,
     revision: Int,
     activity: MainActivity,
-    onLongClick: (() -> Unit)? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onLongClick: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
     val hostView = remember(widgetId, revision) {
@@ -9195,14 +9201,14 @@ fun PageThumbnail(
                 }
                 Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(11.dp))
                 Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = "$pageName",
-                    fontSize = 11.sp,
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = fontFamily,
-                    maxLines = 1
-                )
+                    Text(
+                        text = pageName,
+                        fontSize = 11.sp,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = fontFamily,
+                        maxLines = 1
+                    )
             }
             
             Box(
