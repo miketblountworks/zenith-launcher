@@ -220,11 +220,11 @@ object UniversalSearchEngine {
         SearchSetting("Settings > Manage Apps", Settings.ACTION_MANAGE_APPLICATIONS_SETTINGS),
         SearchSetting("Settings > Language & Locale", Settings.ACTION_LOCALE_SETTINGS),
         SearchSetting("Settings > General Settings", Settings.ACTION_SETTINGS),
-        SearchSetting("Dextera Launcher > 120Hz Core Optimization", "launcher_perf"),
-        SearchSetting("Dextera Launcher > Touch Gestures & Taps", "launcher_gestures"),
-        SearchSetting("Dextera Launcher > System Access & Services", "launcher_permissions"),
-        SearchSetting("Dextera Launcher > Search & Discovery", "launcher_search"),
-        SearchSetting("Dextera Launcher > Customize Screen Pages", "launcher_pages")
+        SearchSetting("Zenith Launcher > 120Hz Core Optimization", "launcher_perf"),
+        SearchSetting("Zenith Launcher > Touch Gestures & Taps", "launcher_gestures"),
+        SearchSetting("Zenith Launcher > System Access & Services", "launcher_permissions"),
+        SearchSetting("Zenith Launcher > Search & Discovery", "launcher_search"),
+        SearchSetting("Zenith Launcher > Customize Screen Pages", "launcher_pages")
     )
 
     fun queryDeviceDocuments(context: Context, searchString: String): List<SearchFile> {

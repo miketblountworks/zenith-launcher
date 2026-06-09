@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const keywords = ['launcher', 'dextera', 'screen', 'widget', 'youtube', 'media', 'redo', 'improve', 'home screen'];
+const keywords = ['launcher', 'zenith', 'screen', 'widget', 'youtube', 'media', 'redo', 'improve', 'home screen'];
 
 console.log("Searching files...");
 
@@ -17,9 +17,9 @@ files.forEach(file => {
             console.log(`\nFile: ${file} matches keys: ${found.join(', ')}`);
             
             // Find occurrences and print snippet
-            const idx = lower.indexOf('dextera');
+            const idx = lower.indexOf('zenith');
             if (idx !== -1) {
-                console.log(`  Snippet at 'dextera': ...${content.slice(Math.max(0, idx - 100), idx + 200)}...`);
+                console.log(`  Snippet at 'zenith': ...${content.slice(Math.max(0, idx - 100), idx + 200)}...`);
             }
             const idxWidget = lower.indexOf('widget');
             if (idxWidget !== -1) {

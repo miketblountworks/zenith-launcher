@@ -11,8 +11,8 @@ android {
   compileSdk { version = release(36) { minorApiLevel = 1 } }
 
   defaultConfig {
-    applicationId = "com.aistudio.dexteralauncher.xtqmz"
-    // packageName = "com.aistudio.dexteralauncher.xtqmz"
+    applicationId = "com.aistudio.zenithlauncher.xtqmz"
+    // packageName = "com.aistudio.zenithlauncher.xtqmz"
     // versionNumber = 2
     minSdk = 24
     targetSdk = 36
