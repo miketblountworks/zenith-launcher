@@ -5,12 +5,12 @@ import android.content.pm.PackageManager
 import android.provider.ContactsContract
 import android.provider.MediaStore
 import android.provider.Settings
-import kotlin.math.max
-import kotlin.math.min
+import com.example.model.AppInfo
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.math.max
+import kotlin.math.min
 
 sealed class SearchResult {
     abstract val id: String

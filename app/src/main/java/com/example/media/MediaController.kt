@@ -2,13 +2,15 @@ package com.example.media
 
 import android.content.Context
 import android.media.AudioManager
+import android.media.session.PlaybackState
 import android.view.KeyEvent
-import com.example.MyNotificationListenerService
+import com.example.service.MyNotificationListenerService
+import android.media.session.MediaController as AndroidMediaController
 
 object MediaController {
     fun dispatchMediaKey(context: Context, keyCode: Int) {
         try {
-            val controller = MyNotificationListenerService.activeController
+            val controller: AndroidMediaController? = MyNotificationListenerService.activeController
             if (controller != null) {
                 var dispatchSuccess = false
                 try {
@@ -16,7 +18,7 @@ object MediaController {
                     when (keyCode) {
                         KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> {
                             val state = controller.playbackState?.state
-                            if (state == android.media.session.PlaybackState.STATE_PLAYING) {
+                            if (state == PlaybackState.STATE_PLAYING) {
                                 controller.transportControls.pause()
                             } else {
                                 controller.transportControls.play()
