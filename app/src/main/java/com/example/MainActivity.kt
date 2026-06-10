@@ -15,6 +15,7 @@ import android.os.Bundle
 import android.os.Message
 import android.view.Choreographer
 import android.view.KeyEvent
+import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -168,6 +169,7 @@ class MainActivity : ComponentActivity() {
     val bingWallpaperUrl = MutableStateFlow("")
     val wallpaperBlurEnabled = MutableStateFlow(false)
     val extractedWallpaperColor = MutableStateFlow<Color?>(null)
+    val wallpaperLuminance = MutableStateFlow(0.5f)
     val allowedNotificationCategories = MutableStateFlow<Set<String>>(
         setOf("Finance 💰", "Travel ✈️", "Social 💬", "Internet 🌐", "Entertainment 🎵", "Shopping 🛍️", "General 📦")
     )
@@ -309,7 +311,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun extractDominantColor(bitmap: Bitmap): Color {
+    private suspend fun extractDominantColor(bitmap: Bitmap): Color {
         return try {
             val resized = Bitmap.createScaledBitmap(bitmap, 16, 16, false)
             var rSum = 0
@@ -332,6 +334,11 @@ class MainActivity : ComponentActivity() {
             val avgR = rSum / count
             val avgG = gSum / count
             val avgB = bSum / count
+            
+            val luminance = (0.299 * avgR + 0.587 * avgG + 0.114 * avgB) / 255.0
+            withContext(Dispatchers.Main) {
+                wallpaperLuminance.value = luminance.toFloat()
+            }
             
             val hsv = FloatArray(3)
             android.graphics.Color.RGBToHSV(avgR, avgG, avgB, hsv)
@@ -677,6 +684,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
+        window.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WALLPAPER)
+        
         database = AppDatabase.getDatabase(this)
         userRepository = UserRepository(database.userDao())
         
@@ -719,7 +728,10 @@ class MainActivity : ComponentActivity() {
             _widgetDataList.value = list
         }
 
-        enableEdgeToEdge()
+        enableEdgeToEdge(
+            statusBarStyle = androidx.activity.SystemBarStyle.auto(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT),
+            navigationBarStyle = androidx.activity.SystemBarStyle.auto(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT)
+        )
         setContent {
             MaterialTheme {
                 val isOnboardingCompleted by onboardingManager.isOnboardingCompleted

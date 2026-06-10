@@ -44,11 +44,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -89,7 +92,7 @@ fun NotificationsPage(
         modifier = modifier
             .fillMaxSize()
             .padding(top = 16.dp, bottom = 48.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         shape = RoundedCornerShape(24.dp)
     ) {
         Column(
@@ -109,7 +112,14 @@ fun NotificationsPage(
                     letterSpacing = 2.sp,
                     fontWeight = FontWeight.Bold,
                     color = themeColor,
-                    fontFamily = fontFamily
+                    fontFamily = fontFamily,
+                    style = TextStyle(
+                        shadow = Shadow(
+                            color = Color.Black.copy(alpha = 0.6f),
+                            offset = Offset(1f, 2f),
+                            blurRadius = 4f
+                        )
+                    )
                 )
                 
                 if (activeNotifications.isNotEmpty()) {

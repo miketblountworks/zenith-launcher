@@ -57,7 +57,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
@@ -551,12 +553,14 @@ fun SwipeToDismissNotification(
                 Spacer(modifier = Modifier.width(12.dp))
                 
                 Column(modifier = Modifier.weight(1f)) {
+                    val softShadow = Shadow(color = Color.Black.copy(alpha = 0.6f), offset = Offset(1f, 2f), blurRadius = 4f)
                     Text(
                         text = item.appName,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
-                        fontFamily = fontFamily
+                        fontFamily = fontFamily,
+                        style = TextStyle(shadow = softShadow)
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
@@ -564,7 +568,8 @@ fun SwipeToDismissNotification(
                         fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontFamily = fontFamily,
-                        maxLines = 2
+                        maxLines = 2,
+                        style = TextStyle(shadow = softShadow)
                     )
                 }
             }

@@ -374,6 +374,13 @@ fun CategoryHeader(title: String, color: Color, fontFamily: FontFamily) {
         color = color,
         fontFamily = fontFamily,
         letterSpacing = 1.5.sp,
+        style = TextStyle(
+            shadow = Shadow(
+                color = Color.Black.copy(alpha = 0.6f),
+                offset = Offset(1f, 2f),
+                blurRadius = 4f
+            )
+        ),
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
@@ -493,7 +500,20 @@ fun FolderExpandCard(folderName: String, packages: List<String>, allApps: List<A
         ) {
             Column(modifier = Modifier.padding(18.dp)) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text("$folderName Popup Folder", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = themeColor, fontFamily = fontFamily)
+                    Text(
+                        text = "$folderName Popup Folder", 
+                        fontSize = 16.sp, 
+                        fontWeight = FontWeight.Bold, 
+                        color = themeColor, 
+                        fontFamily = fontFamily,
+                        style = TextStyle(
+                            shadow = Shadow(
+                                color = Color.Black.copy(alpha = 0.6f),
+                                offset = Offset(1f, 2f),
+                                blurRadius = 4f
+                            )
+                        )
+                    )
                     IconButton(onClick = onClose) { Icon(Icons.Default.Close, contentDescription = "Close folder popup", tint = MaterialTheme.colorScheme.onSurface) }
                 }
                 Spacer(modifier = Modifier.height(10.dp))
@@ -520,9 +540,9 @@ fun FolderExpandCard(folderName: String, packages: List<String>, allApps: List<A
                                     textAlign = TextAlign.Center,
                                     style = TextStyle(
                                         shadow = Shadow(
-                                            color = Color.Black.copy(alpha = 0.5f),
-                                            offset = Offset(1f, 1f),
-                                            blurRadius = 3f
+                                            color = Color.Black.copy(alpha = 0.6f),
+                                            offset = Offset(1f, 2f),
+                                            blurRadius = 4f
                                         )
                                     )
                                 )

@@ -25,7 +25,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -107,7 +109,8 @@ fun ClockStyleWidget(
                             text = currentDate,
                             fontSize = 16.sp,
                             fontFamily = fontFamily,
-                            color = Color.White
+                            color = Color.White,
+                            style = TextStyle(shadow = Shadow(Color.Black.copy(alpha = 0.6f), Offset(1f, 2f), 4f))
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text("☀️", fontSize = 16.sp)
@@ -121,7 +124,8 @@ fun ClockStyleWidget(
                         },
                         fontSize = 14.sp,
                         fontFamily = fontFamily,
-                        color = Color.White.copy(alpha = 0.7f)
+                        color = Color.White.copy(alpha = 0.7f),
+                        style = TextStyle(shadow = Shadow(Color.Black.copy(alpha = 0.6f), Offset(1f, 2f), 4f))
                     )
                 }
             }
@@ -133,7 +137,8 @@ fun ClockStyleWidget(
                         fontFamily = fontFamily,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Center,
+                        style = TextStyle(shadow = Shadow(Color.Black.copy(alpha = 0.6f), Offset(1f, 2f), 4f))
                     )
                     
                     Row(
@@ -146,7 +151,8 @@ fun ClockStyleWidget(
                             fontSize = 15.sp,
                             fontFamily = fontFamily,
                             fontWeight = FontWeight.Medium,
-                            color = Color.White.copy(alpha = 0.9f)
+                            color = Color.White.copy(alpha = 0.9f),
+                            style = TextStyle(shadow = Shadow(Color.Black.copy(alpha = 0.6f), Offset(1f, 2f), 4f))
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Box(
@@ -164,7 +170,8 @@ fun ClockStyleWidget(
                             fontSize = 15.sp,
                             fontFamily = fontFamily,
                             fontWeight = FontWeight.Medium,
-                            color = Color.White.copy(alpha = 0.9f)
+                            color = Color.White.copy(alpha = 0.9f),
+                            style = TextStyle(shadow = Shadow(Color.Black.copy(alpha = 0.6f), Offset(1f, 2f), 4f))
                         )
                     }
                 }
@@ -179,16 +186,18 @@ fun ClockStyleWidget(
                     val hr = tParts.getOrNull(0) ?: "00"
                     val min = tParts.getOrNull(1) ?: "00"
                     
+                    val shadow = Shadow(Color.Black.copy(alpha = 0.6f), Offset(1f, 2f), 4f)
+
                     Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.Center) {
-                        Text(hr, fontSize = 48.sp, fontFamily = fontFamily, fontWeight = FontWeight.ExtraBold, color = primaryColor)
+                        Text(hr, fontSize = 48.sp, fontFamily = fontFamily, fontWeight = FontWeight.ExtraBold, color = primaryColor, style = TextStyle(shadow = shadow))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text(min, fontSize = 32.sp, fontFamily = fontFamily, fontWeight = FontWeight.Bold, color = Color.White)
+                        Text(min, fontSize = 32.sp, fontFamily = fontFamily, fontWeight = FontWeight.Bold, color = Color.White, style = TextStyle(shadow = shadow))
                         if (ampmSuffix.isNotEmpty()) {
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text(ampmSuffix, fontSize = 16.sp, fontFamily = fontFamily, fontWeight = FontWeight.SemiBold, color = Color.White.copy(alpha = 0.7f))
+                            Text(ampmSuffix, fontSize = 16.sp, fontFamily = fontFamily, fontWeight = FontWeight.SemiBold, color = Color.White.copy(alpha = 0.7f), style = TextStyle(shadow = shadow))
                         }
                     }
-                    Text(currentDate, fontSize = 11.sp, fontFamily = fontFamily, fontWeight = FontWeight.Light, color = Color.White.copy(alpha = 0.5f), textAlign = TextAlign.Center)
+                    Text(currentDate, fontSize = 11.sp, fontFamily = fontFamily, fontWeight = FontWeight.Light, color = Color.White.copy(alpha = 0.5f), textAlign = TextAlign.Center, style = TextStyle(shadow = shadow))
                     Text(
                         text = if (useFahrenheit) {
                             if (isLocationGranted) "Local Weather · 70°F · Sunny" else "New York · 72°F · Partly Cloudy"
@@ -199,7 +208,8 @@ fun ClockStyleWidget(
                         fontFamily = fontFamily,
                         color = Color.White.copy(alpha = 0.45f),
                         modifier = Modifier.padding(top = 2.dp),
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Center,
+                        style = TextStyle(shadow = shadow)
                     )
                 }
             }
@@ -230,15 +240,17 @@ fun ClockStyleWidget(
                         val minRad = Math.toRadians(angleMin.toDouble() - 90)
                         drawLine(Color.White, start = center, end = Offset((center.x + minLen * cos(minRad)).toFloat(), (center.y + minLen * sin(minRad)).toFloat()), strokeWidth = 1.5.dp.toPx())
                     }
+                    val shadow = Shadow(Color.Black.copy(alpha = 0.6f), Offset(1f, 2f), 4f)
                     Spacer(modifier = Modifier.width(16.dp))
                     Column(horizontalAlignment = Alignment.Start) {
-                        Text(currentTime, fontSize = 20.sp, fontFamily = fontFamily, fontWeight = FontWeight.Bold, color = Color.White)
-                        Text(currentDate, fontSize = 10.sp, fontFamily = fontFamily, color = Color.White.copy(alpha = 0.6f))
+                        Text(currentTime, fontSize = 20.sp, fontFamily = fontFamily, fontWeight = FontWeight.Bold, color = Color.White, style = TextStyle(shadow = shadow))
+                        Text(currentDate, fontSize = 10.sp, fontFamily = fontFamily, color = Color.White.copy(alpha = 0.6f), style = TextStyle(shadow = shadow))
                         Text(
                             text = if (useFahrenheit) "New York · 72°F · Partly Cloudy" else "New York · 22°C · Partly Cloudy",
                             fontSize = 10.sp,
                             fontFamily = fontFamily,
-                            color = primaryColor.copy(alpha = 0.85f)
+                            color = primaryColor.copy(alpha = 0.85f),
+                            style = TextStyle(shadow = shadow)
                         )
                     }
                 }
@@ -262,16 +274,19 @@ fun ClockStyleWidget(
                     "$t$remWord"
                 }
                 
+                val shadow = Shadow(Color.Black.copy(alpha = 0.6f), Offset(1f, 2f), 4f)
+
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("It's $hrWord $minWordText", fontSize = 16.sp, fontFamily = fontFamily, fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.Center)
-                    Text("in the $ampm", fontSize = 13.sp, fontFamily = fontFamily, color = Color.White.copy(alpha = 0.6f), textAlign = TextAlign.Center)
-                    Text(currentDate, fontSize = 10.sp, fontFamily = fontFamily, color = primaryColor, letterSpacing = 1.sp, modifier = Modifier.padding(top = 1.dp), textAlign = TextAlign.Center)
+                    Text("It's $hrWord $minWordText", fontSize = 16.sp, fontFamily = fontFamily, fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.Center, style = TextStyle(shadow = shadow))
+                    Text("in the $ampm", fontSize = 13.sp, fontFamily = fontFamily, color = Color.White.copy(alpha = 0.6f), textAlign = TextAlign.Center, style = TextStyle(shadow = shadow))
+                    Text(currentDate, fontSize = 10.sp, fontFamily = fontFamily, color = primaryColor, letterSpacing = 1.sp, modifier = Modifier.padding(top = 1.dp), textAlign = TextAlign.Center, style = TextStyle(shadow = shadow))
                     Text(
                         text = if (useFahrenheit) "New York · 72°F · Partly Cloudy" else "New York · 22°C · Partly Cloudy",
                         fontSize = 10.sp,
                         fontFamily = fontFamily,
                         color = Color.White.copy(alpha = 0.5f),
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Center,
+                        style = TextStyle(shadow = shadow)
                     )
                 }
             }

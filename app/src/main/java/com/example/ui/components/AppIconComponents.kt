@@ -65,7 +65,7 @@ fun AlphabetHeaderRow(
         Text(
             text = letter.toString(),
             fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
+            fontWeight = if (isActiveProvider()) FontWeight.ExtraBold else FontWeight.Bold,
             fontFamily = currentFontFamily,
             modifier = Modifier
                 .padding(start = 0.dp)
@@ -74,12 +74,19 @@ fun AlphabetHeaderRow(
                     val isTouchingSidebar = isTouchingSidebarProvider()
                     val displayActive = isTouchingSidebar && isActive
                     
-                    val scale = if (displayActive) 1.4f else 1.0f
+                    val scale = if (displayActive) 1.6f else 1.0f
                     scaleX = scale
                     scaleY = scale
-                    alpha = if (displayActive) 1.0f else 0.5f
+                    alpha = if (displayActive) 1.0f else 0.65f
                 },
-            color = themeColor // Note: color is not fully provider-ized here but alpha/scale are
+            color = themeColor,
+            style = TextStyle(
+                shadow = Shadow(
+                    color = Color.Black.copy(alpha = 0.6f),
+                    offset = Offset(1f, 2f),
+                    blurRadius = 4f
+                )
+            )
         )
     }
 }
@@ -224,9 +231,9 @@ fun AppRow(
             overflow = TextOverflow.Ellipsis,
             style = TextStyle(
                 shadow = Shadow(
-                    color = Color.Black.copy(alpha = 0.5f),
-                    offset = Offset(1f, 1f),
-                    blurRadius = 3f
+                    color = Color.Black.copy(alpha = 0.6f),
+                    offset = Offset(1f, 2f),
+                    blurRadius = 4f
                 )
             ),
             modifier = Modifier.weight(1f)

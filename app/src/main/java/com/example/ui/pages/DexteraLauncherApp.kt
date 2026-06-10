@@ -30,9 +30,9 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -48,7 +48,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -87,9 +86,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.graphicsLayer
@@ -125,19 +126,19 @@ import com.example.ui.components.StyledAppIcon
 import com.example.ui.components.UsageBreakerOverlay
 import com.example.ui.components.UserProfileScreen
 import com.example.ui.components.WakeSleepScreen
-import com.example.ui.components.WallpaperBackground
 import com.example.ui.settings.SettingsPanel
 import com.example.viewmodel.LauncherViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.math.abs
 import kotlin.math.roundToInt
 
 @Composable
 fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewModel = viewModel()) {
     val context = LocalContext.current
+    val letters = remember { ('A'..'Z').toList() }
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
+    val alphabetListState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
     val density = LocalDensity.current
     val isImeVisible = WindowInsets.ime.getBottom(density) > 0
@@ -175,6 +176,13 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
     val wallpaperBlurEnabledVal by activity.wallpaperBlurEnabled.collectAsState()
     val extractedWallpaperColorVal by activity.extractedWallpaperColor.collectAsState()
     val allowedNotificationCategoriesVal by activity.allowedNotificationCategories.collectAsState()
+    
+    val wallpaperLuminance by activity.wallpaperLuminance.collectAsState()
+    val scrimAlpha by animateFloatAsState(
+        targetValue = 0.10f + (wallpaperLuminance * 0.08f),
+        animationSpec = tween(600),
+        label = "scrimAlpha"
+    )
     
     val activePagesVal by activity.activePages.collectAsState()
     val mediaTrackInfoVal by activity.mediaTrackInfo.collectAsState()
@@ -358,12 +366,54 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
         entries
     }
 
+    val dragProgressState = remember { mutableStateOf(0f) }
+
+    val targetMainIndex by remember {
+        derivedStateOf {
+            val mainListTotalItems = if (categoriseByUsageVal && searchQuery.isEmpty()) {
+                topNApps.size + restAppsEntries.size + 2
+            } else {
+                standardListEntries.size
+            }
+            if (mainListTotalItems > 0) {
+                (dragProgressState.value * (mainListTotalItems - 1)).toInt().coerceIn(0, mainListTotalItems - 1)
+            } else 0
+        }
+    }
+
+    val targetAlphabetIndex by remember {
+        derivedStateOf {
+            (dragProgressState.value * (letters.size - 1)).toInt().coerceIn(0, letters.size - 1)
+        }
+    }
+
+    val touchedLetterByProgress by remember {
+        derivedStateOf {
+            val letterIndex = (dragProgressState.value * (letters.size - 1)).toInt().coerceIn(0, letters.size - 1)
+            letters[letterIndex]
+        }
+    }
+
     var touchedLetter by remember { mutableStateOf<Char?>(null) }
     var lockedLetterState by remember { mutableStateOf<Char?>(null) }
     var scrolledLetter by remember { mutableStateOf<Char?>(null) }
     var isTouchingSidebar by remember { mutableStateOf(false) }
     var sidebarTouchY by remember { mutableStateOf<Float?>(null) }
     var sidebarTouchX by remember { mutableStateOf<Float?>(null) }
+
+    LaunchedEffect(targetMainIndex, targetAlphabetIndex) {
+        if (isTouchingSidebar) {
+            listState.scrollToItem(targetMainIndex)
+            alphabetListState.scrollToItem(targetAlphabetIndex)
+        }
+    }
+
+    LaunchedEffect(touchedLetterByProgress) {
+        if (isTouchingSidebar) {
+            touchedLetter = touchedLetterByProgress
+            hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+        }
+    }
     val displayLetter = if (isTouchingSidebar) touchedLetter else scrolledLetter
     
     val firstVisibleIndex by remember { derivedStateOf { listState.firstVisibleItemIndex } }
@@ -553,8 +603,15 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                 }
             }
     ) {
-        // Wallpaper visualizer canvas
-        WallpaperBackground(selectedWallpaper, bingWallpaperUrlVal, wallpaperBlurEnabledVal)
+        // Wallpaper visualizer canvas - REMOVED for transparency
+        // WallpaperBackground(selectedWallpaper, bingWallpaperUrlVal, wallpaperBlurEnabledVal)
+        
+        // Adaptive Readability Scrim
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = scrimAlpha))
+        )
 
         if (uiState.isLoading) {
             CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = currentThemeColor)
@@ -720,35 +777,38 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                 val isAllSelected = selectedCategoryFilter == "All" || selectedCategoryFilter == null
                                                 Box(
                                                     modifier = Modifier
-                                                        .clip(RoundedCornerShape(12.dp))
+                                                        .clip(RoundedCornerShape(16.dp))
+                                                        .background(
+                                                            if (isAllSelected) currentThemeColor.copy(alpha = 0.25f)
+                                                            else Color.White.copy(alpha = 0.12f)
+                                                        )
                                                         .border(
                                                             1.dp,
-                                                            if (isAllSelected) currentThemeColor else Color.White.copy(alpha = 0.15f),
-                                                            RoundedCornerShape(12.dp)
+                                                            if (isAllSelected) currentThemeColor.copy(alpha = 0.5f)
+                                                            else Color.White.copy(alpha = 0.08f),
+                                                            RoundedCornerShape(16.dp)
                                                         )
                                                         .clickable { selectedCategoryFilter = "All" }
                                                 ) {
-                                                    // Glassmorphic background blur effect
-                                                    Box(
-                                                        modifier = Modifier
-                                                            .matchParentSize()
-                                                            .background(Color.White.copy(alpha = if (isAllSelected) 0.12f else 0.05f))
-                                                            .blur(10.dp)
-                                                    )
                                                     Row(
-                                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
                                                         verticalAlignment = Alignment.CenterVertically
                                                     ) {
-                                                        Icon(Icons.Default.Menu, contentDescription = null, tint = if (isAllSelected) currentThemeColor else Color.White, modifier = Modifier.size(13.dp).padding(end = 4.dp))
+                                                        Icon(
+                                                            Icons.Default.Menu, 
+                                                            contentDescription = null, 
+                                                            tint = if (isAllSelected) currentThemeColor else Color.White, 
+                                                            modifier = Modifier.size(16.dp).padding(end = 6.dp)
+                                                        )
                                                         Text(
                                                             text = "All Apps",
-                                                            fontSize = 11.sp,
+                                                            fontSize = 12.sp,
                                                             fontFamily = currentFontFamily,
-                                                            color = if (isAllSelected) currentThemeColor else Color.White.copy(alpha = 0.8f),
-                                                            fontWeight = if (isAllSelected) FontWeight.Bold else FontWeight.Normal,
+                                                            color = if (isAllSelected) Color.White else Color.White.copy(alpha = 0.9f),
+                                                            fontWeight = if (isAllSelected) FontWeight.Bold else FontWeight.Medium,
                                                             style = TextStyle(
                                                                 shadow = Shadow(
-                                                                    color = Color.Black.copy(alpha = 0.5f),
+                                                                    color = Color.Black.copy(alpha = 0.6f),
                                                                     offset = Offset(1f, 1f),
                                                                     blurRadius = 3f
                                                                 )
@@ -770,37 +830,40 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                     val textLabel = name
                                                     Box(
                                                         modifier = Modifier
-                                                            .clip(RoundedCornerShape(12.dp))
+                                                            .clip(RoundedCornerShape(16.dp))
+                                                            .background(
+                                                                if (isSelected) currentThemeColor.copy(alpha = 0.25f)
+                                                                else Color.White.copy(alpha = 0.12f)
+                                                            )
                                                             .border(
                                                                 1.dp,
-                                                                if (isSelected) currentThemeColor else Color.White.copy(alpha = 0.15f),
-                                                                RoundedCornerShape(12.dp)
+                                                                if (isSelected) currentThemeColor.copy(alpha = 0.5f)
+                                                                else Color.White.copy(alpha = 0.08f),
+                                                                RoundedCornerShape(16.dp)
                                                             )
                                                             .clickable { 
                                                                 selectedCategoryFilter = if (isSelected) "All" else name
                                                             }
                                                     ) {
-                                                        // Glassmorphic background blur effect
-                                                        Box(
-                                                            modifier = Modifier
-                                                                .matchParentSize()
-                                                                .background(Color.White.copy(alpha = if (isSelected) 0.12f else 0.05f))
-                                                                .blur(10.dp)
-                                                        )
                                                         Row(
-                                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                                                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
                                                             verticalAlignment = Alignment.CenterVertically
                                                         ) {
-                                                            Icon(iconVector, contentDescription = null, tint = if (isSelected) currentThemeColor else Color.White, modifier = Modifier.size(13.dp).padding(end = 4.dp))
+                                                            Icon(
+                                                                iconVector, 
+                                                                contentDescription = null, 
+                                                                tint = if (isSelected) currentThemeColor else Color.White, 
+                                                                modifier = Modifier.size(16.dp).padding(end = 6.dp)
+                                                            )
                                                             Text(
                                                                 text = "$textLabel (${appsList.size})",
-                                                                fontSize = 11.sp,
+                                                                fontSize = 12.sp,
                                                                 fontFamily = currentFontFamily,
-                                                                color = if (isSelected) currentThemeColor else Color.White.copy(alpha = 0.8f),
-                                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                                                color = if (isSelected) Color.White else Color.White.copy(alpha = 0.9f),
+                                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                                                 style = TextStyle(
                                                                     shadow = Shadow(
-                                                                        color = Color.Black.copy(alpha = 0.5f),
+                                                                        color = Color.Black.copy(alpha = 0.6f),
                                                                         offset = Offset(1f, 1f),
                                                                         blurRadius = 3f
                                                                     )
@@ -872,32 +935,39 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                         androidx.compose.foundation.lazy.LazyRow(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .padding(vertical = 8.dp),
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                            contentPadding = PaddingValues(horizontal = 4.dp)
+                                                .padding(vertical = 12.dp),
+                                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                            contentPadding = PaddingValues(horizontal = 6.dp)
                                         ) {
                                             items(listOf("All", "Contacts", "Apps", "Web", "Settings & Files")) { cat ->
                                                 val isSelected = activeSearchCategoryFilter == cat
                                                 Box(
                                                     modifier = Modifier
+                                                        .clip(RoundedCornerShape(16.dp))
                                                         .background(
-                                                            if (isSelected) currentThemeColor else Color.White.copy(alpha = 0.08f),
+                                                            if (isSelected) currentThemeColor.copy(alpha = 0.25f)
+                                                            else Color.White.copy(alpha = 0.12f)
+                                                        )
+                                                        .border(
+                                                            1.dp,
+                                                            if (isSelected) currentThemeColor.copy(alpha = 0.5f)
+                                                            else Color.White.copy(alpha = 0.08f),
                                                             RoundedCornerShape(16.dp)
                                                         )
                                                         .clickable {
                                                             activeSearchCategoryFilter = cat
                                                         }
-                                                        .padding(horizontal = 14.dp, vertical = 6.dp)
+                                                        .padding(horizontal = 14.dp, vertical = 8.dp)
                                                 ) {
                                                     Text(
                                                         text = cat,
-                                                        color = if (isSelected) Color.Black else Color.White,
+                                                        color = if (isSelected) Color.White else Color.White.copy(alpha = 0.9f),
                                                         fontSize = 12.sp,
-                                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                                         fontFamily = currentFontFamily,
                                                         style = TextStyle(
                                                             shadow = Shadow(
-                                                                color = Color.Black.copy(alpha = 0.40f),
+                                                                color = Color.Black.copy(alpha = 0.6f),
                                                                 offset = Offset(1f, 1f),
                                                                 blurRadius = 3f
                                                             )
@@ -1300,7 +1370,6 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                         ),
                                     horizontalArrangement = if (outerCurrentPageName == "App List") Arrangement.SpaceBetween else Arrangement.Center
                                 ) {
-                                    val letters = ('A'..'Z').toList()
                                     val getLazyColumnIndex: (Int, Boolean) -> Int = { targetIdx, isLocked ->
                                         if (categoriseByUsageVal && searchQuery.isEmpty()) {
                                             val app = finalFilteredAppsList.getOrNull(targetIdx)
@@ -1616,293 +1685,65 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                     }
 
                                     val alphabetBox: @Composable RowScope.() -> Unit = {
-                                        Box(
-                                            modifier = Modifier
-                                                .fillMaxHeight()
-                                                .width(36.dp)
-                                                .padding(vertical = 12.dp)
-                                                .pointerInput(letters) {
-                                                    try {
-                                                        awaitEachGesture {
-                                                            try {
-                                                                val down = awaitFirstDown()
-                                                                down.consume()
-                                                                isTouchingSidebar = true
-                                                                val y = down.position.y
-                                                                val x = down.position.x
-                                                                sidebarTouchY = y
-                                                                sidebarTouchX = x
-                                                                var lastScrolledIndex = -1
-                                                                var scrollJob: kotlinx.coroutines.Job? = null
-                                                                var crossedThreshold = false
-                                                                var lockedLetter: Char? = null
-
-                                                                val getTargetLetterForY: (Float, Float) -> Char = { touchY, screenH ->
-                                                                    val pct = (touchY / screenH).coerceIn(0f, 1f)
-                                                                    val letterIndex = (pct * letters.size).toInt().coerceIn(0, letters.lastIndex)
-                                                                    letters[letterIndex]
-                                                                }
-
-                                                                val getAppIndexForY: (Float, Float, Char?) -> Int = { touchY, screenH, lockLtr ->
-                                                                    if (screenH > 0 && finalFilteredAppsList.isNotEmpty()) {
-                                                                        val pct = (touchY / screenH).coerceIn(0f, 1f)
-                                                                        val targetLetter = lockLtr ?: getTargetLetterForY(touchY, screenH)
-                                                                        
-                                                                        val matchingApps = finalFilteredAppsList.mapIndexedNotNull { index, app -> 
-                                                                            if (app.label.firstOrNull()?.uppercaseChar() == targetLetter) index else null
-                                                                        }
-                                                                        
-                                                                        if (matchingApps.isNotEmpty()) {
-                                                                            if (lockLtr != null) {
-                                                                                val internalIndex = (pct * matchingApps.size).toInt().coerceIn(0, matchingApps.lastIndex)
-                                                                                matchingApps[internalIndex]
-                                                                            } else {
-                                                                                matchingApps.first()
-                                                                            }
-                                                                        } else {
-                                                                            (pct * finalFilteredAppsList.lastIndex).toInt().coerceIn(0, finalFilteredAppsList.lastIndex)
-                                                                        }
-                                                                    } else 0
-                                                                }
-
-                                                                if (x > 165f) {
-                                                                    lockedLetter = getTargetLetterForY(y, size.height.toFloat())
-                                                                    lockedLetterState = lockedLetter
-                                                                } else {
-                                                                    lockedLetterState = null
-                                                                }
-
-                                                                if (lockedLetter == null) {
-                                                                    touchedLetter = getTargetLetterForY(y, size.height.toFloat())
-                                                                } else {
-                                                                    touchedLetter = lockedLetter
-                                                                }
-                                                                
-                                                                val targetIdx = if (lockedLetter != null) {
-                                                                    getAppIndexForY(y, size.height.toFloat(), lockedLetter)
-                                                                } else {
-                                                                    getAppIndexForY(y, size.height.toFloat(), null)
-                                                                }
-                                                                
-                                                                if (targetIdx in finalFilteredAppsList.indices) {
-                                                                    val currentHoveredApp = finalFilteredAppsList[targetIdx]
-                                                                    if (lockedLetter != null) {
-                                                                        hoveredApp = currentHoveredApp
-                                                                        if (highlightedApp != currentHoveredApp) highlightedApp = currentHoveredApp
-                                                                    } else {
-                                                                        hoveredApp = null
-                                                                        highlightedApp = null
-                                                                    }
-                                                                    if (targetIdx != lastScrolledIndex) {
-                                                                        lastScrolledIndex = targetIdx
-                                                                        scrollJob = coroutineScope.launch {
-                                                                            try {
-                                                                                scrollToItemCenter(targetIdx, y, lockedLetter != null)
-                                                                            } catch (_: Exception) {}
-                                                                        }
-                                                                    }
-                                                                }
-                                                                
-                                                                do {
-                                                                    val event = awaitPointerEvent()
-                                                                    val change = event.changes.firstOrNull()
-                                                                    if (change != null && change.pressed) {
-                                                                        change.consume()
-                                                                        val currentY = change.position.y
-                                                                        val currentX = change.position.x
-                                                                        sidebarTouchY = currentY
-                                                                        sidebarTouchX = currentX
-                                                                        
-                                                                        if (currentX > 165f) {
-                                                                            if (!crossedThreshold) {
-                                                                                crossedThreshold = true
-                                                                                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                                                                            }
-                                                                            if (lockedLetter == null) {
-                                                                                lockedLetter = touchedLetter
-                                                                            }
-                                                                            lockedLetterState = lockedLetter
-                                                                        } else if (currentX <= 165f) {
-                                                                            crossedThreshold = false
-                                                                            lockedLetter = null
-                                                                            lockedLetterState = null
-                                                                        }
-
-                                                                        if (lockedLetter == null) {
-                                                                            touchedLetter = getTargetLetterForY(currentY, size.height.toFloat())
-                                                                        } else {
-                                                                            touchedLetter = lockedLetter
-                                                                        }
-                                                                        
-                                                                        val targetIndex = if (lockedLetter != null) {
-                                                                            getAppIndexForY(currentY, size.height.toFloat(), lockedLetter)
-                                                                        } else {
-                                                                            getAppIndexForY(currentY, size.height.toFloat(), null)
-                                                                        }
-                                                                        
-                                                                        if (targetIndex in finalFilteredAppsList.indices) {
-                                                                            val currentHoveredApp = finalFilteredAppsList[targetIndex]
-                                                                            if (lockedLetter != null) {
-                                                                                hoveredApp = currentHoveredApp
-                                                                                if (highlightedApp != currentHoveredApp) highlightedApp = currentHoveredApp
-                                                                            } else {
-                                                                                hoveredApp = null
-                                                                                highlightedApp = null
-                                                                            }
-                                                                            if (targetIndex != lastScrolledIndex) {
-                                                                                lastScrolledIndex = targetIndex
-                                                                                if (currentX > 165f) {
-                                                                                    val prevApp = finalFilteredAppsList.getOrNull(lastScrolledIndex)
-                                                                                    val isLetterChanged = prevApp != null && prevApp.label.firstOrNull()?.uppercaseChar() != currentHoveredApp.label.firstOrNull()?.uppercaseChar()
-                                                                                    if (isLetterChanged) {
-                                                                                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                                                                                    } else {
-                                                                                        hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                                                                    }
-                                                                                } else {
-                                                                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                                                                }
-                                                                                scrollJob?.cancel()
-                                                                                scrollJob = coroutineScope.launch {
-                                                                                    try {
-                                                                                        scrollToItemCenter(targetIndex, currentY, lockedLetter != null)
-                                                                                    } catch (_: Exception) {}
-                                                                                }
-                                                                            }
-                                                                        }
-                                                                    }
-                                                                } while (event.changes.any { it.pressed })
-                                                                
-                                                                val finalTouchedLetter = touchedLetter
-                                                                if (finalTouchedLetter != null) {
-                                                                    scrolledLetter = finalTouchedLetter
-                                                                }
-                                                                
-                                                                val finalSidebarTouchX = sidebarTouchX ?: 0f
-                                                                if (hoveredApp != null && finalSidebarTouchX > 165f) {
-                                                                    activity.launchAppWithTracker(hoveredApp!!.packageName)
-                                                                }
-                                                                
-                                                            } catch (e: kotlinx.coroutines.CancellationException) {
-                                                                throw e
-                                                            } catch (e: Exception) {
-                                                                e.printStackTrace()
-                                                            } finally {
-                                                                hoveredApp = null
-                                                                highlightedApp = null
-                                                                touchedLetter = null
-                                                                lockedLetterState = null
-                                                                isTouchingSidebar = false
-                                                                sidebarTouchY = null
-                                                                sidebarTouchX = null
-                                                            }
-                                                        }
-                                                    } catch (e: kotlinx.coroutines.CancellationException) {
-                                                        throw e
-                                                    } catch (e: Exception) {
-                                                        e.printStackTrace()
-                                                    }
-                                                }
-                                        ) {
-                                        BoxWithConstraints(
-                                            modifier = Modifier.fillMaxSize()
-                                        ) {
-                                            val maxItemHeight = this.maxHeight / letters.size
-                                            val dynamicFontSize = (maxItemHeight.value * 0.5f).coerceIn(10f, 15f).sp
-                                            
-                                            Column(
-                                                modifier = Modifier.fillMaxSize(),
-                                                verticalArrangement = Arrangement.SpaceEvenly,
-                                                horizontalAlignment = Alignment.CenterHorizontally
-                                            ) {
-                                                letters.forEachIndexed { idx, letter ->
-                                                    val isActive = displayLetter == letter
-
-                                                    val targetOffset = if (isTouchingSidebar && touchedLetter != null) {
-                                                        val curIdx = letters.indexOf(touchedLetter)
-                                                        val dist = abs(idx - curIdx)
-                                                        val baseOffset = when (dist) {
-                                                            0 -> (-24).dp
-                                                            1 -> (-18).dp
-                                                            2 -> (-12).dp
-                                                            3 -> (-6).dp
-                                                            else -> 0.dp
-                                                        }
-                                                        baseOffset
-                                                    } else {
-                                                        0.dp
-                                                    }
-
-                                                    val targetScale = if (isTouchingSidebar && touchedLetter != null) {
-                                                        val curIdx = letters.indexOf(touchedLetter)
-                                                        val dist = abs(idx - curIdx)
-                                                        when (dist) {
-                                                            0 -> 1.7f
-                                                            1 -> 1.4f
-                                                            2 -> 1.2f
-                                                            3 -> 1.1f
-                                                            else -> 1.0f
-                                                        }
-                                                    } else {
-                                                        if (isActive) 1.2f else 1.0f
-                                                    }
-
-                                                    val animatedOffset by animateDpAsState(
-                                                        targetValue = targetOffset,
-                                                        animationSpec = spring(
-                                                            dampingRatio = Spring.DampingRatioMediumBouncy,
-                                                            stiffness = Spring.StiffnessLow
-                                                        ),
-                                                        label = "letter_offset"
-                                                    )
-
-                                                    val animatedScale by animateFloatAsState(
-                                                        targetValue = targetScale,
-                                                        animationSpec = spring(
-                                                            dampingRatio = Spring.DampingRatioMediumBouncy,
-                                                            stiffness = Spring.StiffnessLow
-                                                        ),
-                                                        label = "letter_scale"
-                                                    )
-
-                                                    Box(
-                                                        contentAlignment = Alignment.Center,
-                                                        modifier = Modifier
-                                                            .wrapContentSize()
-                                                            .weight(1f)
-                                                            .graphicsLayer {
-                                                                translationX = animatedOffset.toPx()
-                                                            }
-                                                            .then(
-                                                                if (isActive) {
-                                                                    Modifier
-                                                                        .background(
-                                                                            Color.White.copy(alpha = 0.2f),
-                                                                            RoundedCornerShape(percent = 50)
-                                                                        )
-                                                                        .padding(horizontal = 8.dp, vertical = 2.dp)
-                                                                } else {
-                                                                    Modifier
-                                                                }
-                                                            )
-                                                    ) {
-                                                        Text(
-                                                            text = letter.toString(),
-                                                            fontSize = dynamicFontSize,
-                                                            fontWeight = if (isActive) FontWeight.ExtraBold else FontWeight.Normal,
-                                                            color = if (isActive) Color.White else Color.White.copy(alpha = 0.55f),
-                                                            modifier = Modifier
-                                                                .graphicsLayer {
-                                                                    scaleX = animatedScale
-                                                                    scaleY = animatedScale
-                                                                },
-                                                            style = TextStyle(shadow = Shadow(Color.Black, Offset(1f, 1f), 3f))
-                                                        )
-                                                    }
-                                                }
+                                        val showTopFade by remember {
+                                            derivedStateOf {
+                                                alphabetListState.firstVisibleItemIndex > 0 || alphabetListState.firstVisibleItemScrollOffset > 0
                                             }
                                         }
-
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxHeight(0.85f)
+                                                .align(Alignment.CenterVertically)
+                                                .width(48.dp)
+                                                .drawWithContent {
+                                                    drawContent()
+                                                    drawRect(
+                                                        brush = Brush.verticalGradient(
+                                                            0.0f to if (showTopFade) Color.Transparent else Color.Black,
+                                                            0.15f to Color.Black,
+                                                            0.85f to Color.Black,
+                                                            1.0f to Color.Transparent
+                                                        ),
+                                                        blendMode = BlendMode.DstIn
+                                                    )
+                                                }
+                                                .pointerInput(letters) {
+                                                    detectVerticalDragGestures(
+                                                        onDragStart = { isTouchingSidebar = true },
+                                                        onDragEnd = { isTouchingSidebar = false },
+                                                        onDragCancel = { isTouchingSidebar = false },
+                                                        onVerticalDrag = { change, _ ->
+                                                            change.consume()
+                                                            val totalHeight = size.height.toFloat()
+                                                            val currentY = change.position.y.coerceIn(0f, totalHeight)
+                                                            dragProgressState.value = currentY / totalHeight
+                                                        }
+                                                    )
+                                                }
+                                        ) {
+                                            LazyColumn(
+                                                state = alphabetListState,
+                                                userScrollEnabled = false,
+                                                modifier = Modifier.fillMaxSize(),
+                                                horizontalAlignment = Alignment.CenterHorizontally,
+                                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                                            ) {
+                                                items(letters) { letter ->
+                                                    Text(
+                                                        text = letter.toString(),
+                                                        style = MaterialTheme.typography.titleMedium.copy(
+                                                            shadow = Shadow(
+                                                                color = Color.Black.copy(alpha = 0.5f),
+                                                                offset = Offset(2f, 2f),
+                                                                blurRadius = 4f
+                                                            )
+                                                        ),
+                                                        color = Color.White,
+                                                        fontWeight = FontWeight.Bold,
+                                                        modifier = Modifier.padding(vertical = 4.dp)
+                                                    )
+                                                }
+                                            }
                                         }
                                     }
 
@@ -1959,7 +1800,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                             themeColor = currentThemeColor,
                                                             fontFamily = currentFontFamily,
                                                             activity = activity,
-                                                            modifier = Modifier.fillMaxSize()
+                                                            modifier = Modifier.fillMaxSize().background(Color.Transparent)
                                                         )
                                                     } else if (targetPageName == "Notifications") {
                                                         NotificationsPage(
@@ -1979,10 +1820,10 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                                     activity.launchAppWithTracker(foundApp.packageName)
                                                                 }
                                                             },
-                                                            modifier = Modifier.fillMaxSize()
+                                                            modifier = Modifier.fillMaxSize().background(Color.Transparent)
                                                         )
                                                     } else if (targetPageName == "App List") {
-                                                        Box(modifier = Modifier.fillMaxSize()) {
+                                                        Box(modifier = Modifier.fillMaxSize().background(Color.Transparent)) {
                                                             Row(
                                                                 modifier = Modifier.fillMaxSize(),
                                                                 horizontalArrangement = Arrangement.SpaceBetween
@@ -2025,7 +1866,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                              themeColor = currentThemeColor,
                                                              fontFamily = currentFontFamily,
                                                              activity = activity,
-                                                             modifier = Modifier.fillMaxSize()
+                                                             modifier = Modifier.fillMaxSize().background(Color.Transparent)
                                                          )
                                                      }
                                                  }

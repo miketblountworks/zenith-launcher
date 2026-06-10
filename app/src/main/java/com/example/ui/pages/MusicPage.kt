@@ -120,7 +120,7 @@ fun MusicPage(
                     .widthIn(max = 480.dp)
                     .fillMaxWidth(0.92f)
                     .padding(vertical = 16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF13151D)),
+                colors = CardDefaults.cardColors(containerColor = Color.Transparent),
                 shape = RoundedCornerShape(32.dp)
             ) {
                 Column(
@@ -487,7 +487,7 @@ fun MusicPage(
                     .weight(1f) // Ensure balanced portion
                     .fillMaxWidth(0.98f)
                     .widthIn(max = 480.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF13151D)),
+                colors = CardDefaults.cardColors(containerColor = Color.Transparent),
                 shape = RoundedCornerShape(32.dp),
                 elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
             ) {

@@ -250,7 +250,7 @@ fun WidgetPage(
                             Box(
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(14.dp))
+                                    .background(Color.Transparent, RoundedCornerShape(14.dp))
                                     .border(
                                         width = if (isEditingVal) 2.dp else 1.dp,
                                         color = if (isEditingVal) Color(0xFF29B6F6) else MaterialTheme.colorScheme.outlineVariant,
