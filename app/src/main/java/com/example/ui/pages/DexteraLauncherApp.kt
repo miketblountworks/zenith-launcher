@@ -1410,7 +1410,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                         }
                                                     }
 
-                                                    itemsIndexed(items = topNApps, key = { _, app -> "top_" + app.packageName }) { index, app ->
+                                                    itemsIndexed(items = topNApps, key = { _, app -> "top_" + app.packageName }) { idx, app ->
                                                         val isAppHovered = highlightedApp == app
                                                         val alphaTarget = if (app.packageName in limitedAppsSet) {
                                                             0.15f
@@ -1427,15 +1427,14 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                         val animatedAlpha by animateFloatAsState(targetValue = alphaTarget, label = "app_alpha")
                                                         
                                                         AppRow(
-                                                            index = 1 + index,
+                                                            index = 1 + idx,
                                                             app = app,
-                                                            animatedAlpha = animatedAlpha,
-                                                            highlightedApp = highlightedApp,
-                                                            sidebarTouchX = sidebarTouchX,
-                                                            sidebarTouchY = sidebarTouchY,
-                                                            sidebarInteractiveProgress = sidebarInteractiveProgress,
+                                                            alphaProvider = { animatedAlpha },
+                                                            isAppHoveredProvider = { highlightedApp == app },
+                                                            sidebarTouchXProvider = { sidebarTouchX },
+                                                            sidebarTouchYProvider = { sidebarTouchY },
+                                                            sidebarInteractiveProgressProvider = { sidebarInteractiveProgress },
                                                             listState = listState,
-                                                            density = density,
                                                             currentFontFamily = currentFontFamily,
                                                             iconPackVal = iconPackVal,
                                                             iconThemeColor = iconThemeColor,
@@ -1502,8 +1501,8 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                         is ListEntry.Header -> {
                                                             AlphabetHeaderRow(
                                                                 letter = entry.letter,
-                                                                isActive = (touchedLetter == entry.letter),
-                                                                isTouchingSidebar = isTouchingSidebar,
+                                                                isActiveProvider = { touchedLetter == entry.letter },
+                                                                isTouchingSidebarProvider = { isTouchingSidebar },
                                                                 currentFontFamily = currentFontFamily,
                                                                 themeColor = currentThemeColor
                                                             )
@@ -1528,13 +1527,12 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                             AppRow(
                                                                 index = topNApps.size + 2 + index,
                                                                 app = app,
-                                                                animatedAlpha = animatedAlpha,
-                                                                highlightedApp = highlightedApp,
-                                                                sidebarTouchX = sidebarTouchX,
-                                                                sidebarTouchY = sidebarTouchY,
-                                                                sidebarInteractiveProgress = sidebarInteractiveProgress,
+                                                                alphaProvider = { animatedAlpha },
+                                                                isAppHoveredProvider = { highlightedApp == app },
+                                                                sidebarTouchXProvider = { sidebarTouchX },
+                                                                sidebarTouchYProvider = { sidebarTouchY },
+                                                                sidebarInteractiveProgressProvider = { sidebarInteractiveProgress },
                                                                 listState = listState,
-                                                                density = density,
                                                                 currentFontFamily = currentFontFamily,
                                                                 iconPackVal = iconPackVal,
                                                                 iconThemeColor = iconThemeColor,
@@ -1565,8 +1563,8 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                         is ListEntry.Header -> {
                                                             AlphabetHeaderRow(
                                                                 letter = entry.letter,
-                                                                isActive = (touchedLetter == entry.letter),
-                                                                isTouchingSidebar = isTouchingSidebar,
+                                                                isActiveProvider = { touchedLetter == entry.letter },
+                                                                isTouchingSidebarProvider = { isTouchingSidebar },
                                                                 currentFontFamily = currentFontFamily,
                                                                 themeColor = currentThemeColor
                                                             )
@@ -1591,13 +1589,12 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                             AppRow(
                                                                 index = index,
                                                                 app = app,
-                                                                animatedAlpha = animatedAlpha,
-                                                                highlightedApp = highlightedApp,
-                                                                sidebarTouchX = sidebarTouchX,
-                                                                sidebarTouchY = sidebarTouchY,
-                                                                sidebarInteractiveProgress = sidebarInteractiveProgress,
+                                                                alphaProvider = { animatedAlpha },
+                                                                isAppHoveredProvider = { highlightedApp == app },
+                                                                sidebarTouchXProvider = { sidebarTouchX },
+                                                                sidebarTouchYProvider = { sidebarTouchY },
+                                                                sidebarInteractiveProgressProvider = { sidebarInteractiveProgress },
                                                                 listState = listState,
-                                                                density = density,
                                                                 currentFontFamily = currentFontFamily,
                                                                 iconPackVal = iconPackVal,
                                                                 iconThemeColor = iconThemeColor,
