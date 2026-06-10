@@ -539,8 +539,7 @@ class MainActivity : ComponentActivity() {
     }
 
     fun refreshAppUsageScores() {
-        @Suppress("DEPRECATION")
-        if (checkSelfPermission(android.Manifest.permission.PACKAGE_USAGE_STATS) != PackageManager.PERMISSION_GRANTED) {
+        if (!hasUsageStatsPermission(this)) {
             // Silently skip if no permission, or we could request it. 
             // In a launcher, usually user has to grant this manually in settings.
             return

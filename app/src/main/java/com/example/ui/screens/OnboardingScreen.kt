@@ -20,13 +20,15 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.RocketLaunch
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -86,7 +88,7 @@ fun OnboardingScreen(onFinish: () -> Unit) {
         ),
         OnboardingPage(
             title = "Almost Ready",
-            description = "Dextera needs Notification Access to bundle and summarize your alerts securely.",
+            description = "Dextera needs Notification and Usage Access to provide its core features securely.",
             icon = Icons.Default.VerifiedUser,
             color = MaterialTheme.colorScheme.tertiary
         )
@@ -203,12 +205,27 @@ fun OnboardingPageContent(page: OnboardingPage, isLastPage: Boolean, onFinish: (
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(16.dp)
             ) {
-                Icon(Icons.Default.Settings, contentDescription = null)
+                Icon(Icons.Default.Notifications, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Enable Notification Access", fontWeight = FontWeight.Bold)
             }
-            
+
             Spacer(modifier = Modifier.height(12.dp))
+
+            Button(
+                onClick = {
+                    context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
+                },
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+            ) {
+                Icon(Icons.Default.Insights, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Enable Usage Access", fontWeight = FontWeight.Bold)
+            }
+            
+            Spacer(modifier = Modifier.height(24.dp))
             
             TextButton(
                 onClick = onFinish,

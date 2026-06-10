@@ -1112,6 +1112,44 @@ fun SettingsPanel(onClose: () -> Unit, themeColor: Color, fontFamily: FontFamily
                                             }
                                         }
                                     }
+
+                                    // 3. Usage Access Card
+                                    Card(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                                        shape = RoundedCornerShape(16.dp)
+                                    ) {
+                                        val isUsageGranted = activity.hasUsageStatsPermission(activity)
+                                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                            Text("Usage Statistics Access", fontSize = 15.sp, color = themeColor, fontWeight = FontWeight.Bold, fontFamily = fontFamily)
+                                            Text(
+                                                text = "Current Status: " + (if (isUsageGranted) "✅ Granted" else "❌ Missing"),
+                                                fontSize = 13.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                fontFamily = fontFamily,
+                                                color = if (isUsageGranted) themeColor else MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                            Text("Enables automatic categorization of your most used apps at the top of your list based on real usage patterns.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontFamily = fontFamily)
+                                            Button(
+                                                onClick = {
+                                                    try {
+                                                        val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).apply {
+                                                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                                        }
+                                                        activity.startActivity(intent)
+                                                    } catch (_: Exception) {
+                                                        Toast.makeText(activity, "Settings could not be opened automatically", Toast.LENGTH_SHORT).show()
+                                                    }
+                                                },
+                                                colors = ButtonDefaults.buttonColors(containerColor = themeColor),
+                                                shape = RoundedCornerShape(12.dp),
+                                                modifier = Modifier.fillMaxWidth().height(48.dp),
+                                                contentPadding = PaddingValues(0.dp)
+                                            ) {
+                                                Text(if (isUsageGranted) "Configure in Settings" else "Grant Usage Access", fontSize = 13.sp, color = MaterialTheme.colorScheme.onPrimary.takeOrElse { Color.Black }, fontWeight = FontWeight.Bold, fontFamily = fontFamily)
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
