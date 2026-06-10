@@ -455,7 +455,7 @@ fun SwipeToDismissNotification(
                     )
                 }
                 .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surfaceContainerLow, RoundedCornerShape(14.dp))
+                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(14.dp))
                 .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(14.dp))
                 .padding(12.dp)
         ) {

@@ -7,7 +7,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -15,13 +14,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -32,6 +34,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -43,7 +47,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
@@ -88,30 +91,30 @@ fun NotificationsPage(
     var selectedFilterCategory by remember { mutableStateOf("All") }
     val expandedGroups = remember { mutableStateMapOf<String, Boolean>() }
 
-    Card(
+    Box(
         modifier = modifier
             .fillMaxSize()
-            .padding(top = 16.dp, bottom = 48.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-        shape = RoundedCornerShape(24.dp)
+            .background(Color.Black.copy(alpha = 0.6f))
+            .windowInsetsPadding(WindowInsets.statusBars)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(20.dp)
         ) {
             // Header
             Row(
-                modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = "NOTIFICATION CENTER",
                     fontSize = 11.sp,
-                    letterSpacing = 2.sp,
+                    letterSpacing = 0.15.sp,
                     fontWeight = FontWeight.Bold,
-                    color = themeColor,
+                    color = Color.White,
                     fontFamily = fontFamily,
                     style = TextStyle(
                         shadow = Shadow(
@@ -126,7 +129,7 @@ fun NotificationsPage(
                     Text(
                         text = "Clear All",
                         fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.error,
+                        color = Color.White,
                         fontWeight = FontWeight.Bold,
                         fontFamily = fontFamily,
                         modifier = Modifier
@@ -144,48 +147,60 @@ fun NotificationsPage(
                 }
             }
 
-            // Tabs / Filters
-            val presentCategories = remember(activeNotifications) {
-                activeNotifications.map { getNotificationCategory(it.appName, it.text, it.pkg) }.distinct()
-            }
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 20.dp)
+            ) {
 
-            if (presentCategories.size > 1) {
-                LazyRow(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    item {
-                        val isSelected = selectedFilterCategory == "All"
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(20.dp))
-                                .border(BorderStroke(1.dp, if (isSelected) themeColor else MaterialTheme.colorScheme.outlineVariant), RoundedCornerShape(20.dp))
-                                .background(if (isSelected) themeColor.copy(alpha = 0.15f) else Color.Transparent)
-                                .clickable { selectedFilterCategory = "All" }
-                                .padding(horizontal = 12.dp, vertical = 6.dp)
-                        ) {
-                            Text("All", fontSize = 10.sp, color = if (isSelected) themeColor else MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
-                        }
-                    }
-                    
-                    presentCategories.forEach { cat ->
+                // Tabs / Filters
+                val presentCategories = remember(activeNotifications) {
+                    activeNotifications.map { getNotificationCategory(it.appName, it.text, it.pkg) }.distinct()
+                }
+
+                if (presentCategories.size > 1) {
+                    LazyRow(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         item {
-                            val isSelected = selectedFilterCategory == cat
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(20.dp))
-                                    .border(BorderStroke(1.dp, if (isSelected) themeColor else MaterialTheme.colorScheme.outlineVariant), RoundedCornerShape(20.dp))
-                                    .background(if (isSelected) themeColor.copy(alpha = 0.15f) else Color.Transparent)
-                                    .clickable { selectedFilterCategory = cat }
-                                    .padding(horizontal = 12.dp, vertical = 6.dp)
-                            ) {
-                                Text(cat, fontSize = 10.sp, color = if (isSelected) themeColor else MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
+                            val isSelected = selectedFilterCategory == "All"
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = { selectedFilterCategory = "All" },
+                                label = { Text("All", fontSize = 10.sp, fontWeight = FontWeight.Bold) },
+                                shape = RoundedCornerShape(20.dp),
+                                colors = FilterChipDefaults.filterChipColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                    labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    selectedContainerColor = themeColor,
+                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                                ),
+                                border = null
+                            )
+                        }
+                        
+                        presentCategories.forEach { cat ->
+                            item {
+                                val isSelected = selectedFilterCategory == cat
+                                FilterChip(
+                                    selected = isSelected,
+                                    onClick = { selectedFilterCategory = cat },
+                                    label = { Text(cat, fontSize = 10.sp, fontWeight = FontWeight.Bold) },
+                                    shape = RoundedCornerShape(20.dp),
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                        labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        selectedContainerColor = themeColor,
+                                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                                    ),
+                                    border = null
+                                )
                             }
                         }
                     }
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
-                Spacer(modifier = Modifier.height(8.dp))
-            }
 
             val displayedNotifications = remember(activeNotifications, selectedFilterCategory) {
                 activeNotifications.filter { selectedFilterCategory == "All" || getNotificationCategory(it.appName, it.text, it.pkg) == selectedFilterCategory }
@@ -486,4 +501,5 @@ fun NotificationsPage(
             }
         }
     }
+}
 }

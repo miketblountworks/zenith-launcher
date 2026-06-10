@@ -211,6 +211,9 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
     var activeSearchCategoryFilter by remember { mutableStateOf("All") }
     var searchResults by remember { mutableStateOf(emptyList<SearchResult>()) }
 
+    val isNotificationsExpanded by activity.isNotificationCenterVisible.collectAsState()
+    val setNotificationsExpanded = { value: Boolean -> activity.isNotificationCenterVisible.value = value }
+
     val displayedResults = remember(searchResults, activeSearchCategoryFilter) {
         if (activeSearchCategoryFilter == "All") {
             searchResults
@@ -258,7 +261,6 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
     var zoomLevel by remember { mutableIntStateOf(0) }
     var hoveredApp by remember { mutableStateOf<AppInfo?>(null) }
     var highlightedApp by remember { mutableStateOf<AppInfo?>(null) }
-    var isNotificationsExpanded by remember { mutableStateOf(false) }
     
     val activeEditId by activity._longPressedWidgetId.collectAsState()
     
@@ -300,7 +302,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
             selectedUser = null
             activeBreakerApp = null
             expandedFolderPackageName = null
-            isNotificationsExpanded = false
+            setNotificationsExpanded(false)
             focusedContextMenuApp = null
             activity._longPressedWidgetId.value = null
             focusManager.clearFocus()
@@ -462,7 +464,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
         if (showSettingsPanel) {
             showSettingsPanel = false
         } else if (isNotificationsExpanded) {
-            isNotificationsExpanded = false
+            setNotificationsExpanded(false)
         } else if (zoomLevel > 0) {
             zoomLevel = 0
         } else if (searchQuery.isNotEmpty()) {
@@ -511,7 +513,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                         expandedFolderPackageName = null
                                         currentFolderAppsPackageList = null
                                         focusedContextMenuApp = null
-                                        isNotificationsExpanded = false
+                                        setNotificationsExpanded(false)
                                         totalDragY = 0f
                                     }
                                 }
@@ -696,36 +698,35 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                     )
 
                     Column(modifier = Modifier.weight(1f)) {
-                        // 1. Top Space 25% (Mandatory blank space for one handed ergonomic layout)
-                        Box(
-                            modifier = Modifier
-                                .weight(topWeight.coerceAtLeast(0.0001f))
-                                .fillMaxWidth()
-                                .then(
-                                    if (isNotificationsExpanded) {
-                                        Modifier.clickable(
-                                            indication = null,
-                                            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
-                                        ) {
-                                            isNotificationsExpanded = false
-                                        }
-                                    } else {
-                                        Modifier.pointerInput(gesturesEnabledVal, searchQuery) {
-                                            if (searchQuery.isNotEmpty()) return@pointerInput
-                                            if (gesturesEnabledVal) {
-                                                detectDragGestures(
-                                                    onDrag = { _, dragAmount ->
-                                                        if (dragAmount.y > 45f) {
-                                                            searchQuery = " "
-                                                            searchQuery = ""
-                                                        }
-                                                    }
-                                                )
-                                            }
+        // 1. Top Space 25% (Mandatory blank space for one handed ergonomic layout)
+        Box(
+            modifier = Modifier
+                .weight(topWeight.coerceAtLeast(0.0001f))
+                .fillMaxWidth()
+                .then(
+                    if (isNotificationsExpanded) {
+                        Modifier.clickable(
+                            indication = null,
+                            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+                        ) {
+                            setNotificationsExpanded(false)
+                        }
+                    } else {
+                        Modifier.pointerInput(gesturesEnabledVal, searchQuery) {
+                            if (searchQuery.isNotEmpty()) return@pointerInput
+                            if (gesturesEnabledVal) {
+                                detectDragGestures(
+                                    onDrag = { _, dragAmount ->
+                                        if (dragAmount.y > 45f) {
+                                            setNotificationsExpanded(true)
                                         }
                                     }
                                 )
-                        ) {
+                            }
+                        }
+                    }
+                )
+        ) {
                             if (isNotificationsExpanded) {
                                 Box(
                                     modifier = Modifier
@@ -749,7 +750,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                         indication = null,
                                         interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
                                     ) {
-                                        isNotificationsExpanded = false
+                                        setNotificationsExpanded(false)
                                     }
                                 } else Modifier
 
@@ -1884,7 +1885,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                             indication = null,
                                             interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
                                         ) {
-                                            isNotificationsExpanded = false
+                                            setNotificationsExpanded(false)
                                         }
                                 )
                             }
