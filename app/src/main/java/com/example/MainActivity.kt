@@ -20,15 +20,20 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.Crossfade
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
 import androidx.core.content.edit
 import androidx.core.os.BundleCompat
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.example.launcher.LauncherState
 import com.example.model.WidgetData
 import com.example.service.MyNotificationListenerService
 import com.example.ui.pages.DexteraLauncherApp
+import com.example.ui.screens.OnboardingScreen
+import com.example.utils.OnboardingManager
 import com.example.widgets.CustomAppWidgetHost
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -46,6 +51,8 @@ class MainActivity : ComponentActivity() {
 
     lateinit var appWidgetHost: CustomAppWidgetHost
     lateinit var appWidgetManager: AppWidgetManager
+    
+    private val onboardingManager by lazy { OnboardingManager(this) }
 
     val _longPressedWidgetId get() = LauncherState._longPressedWidgetId
     val draggingWidgetId get() = LauncherState.draggingWidgetId
@@ -716,7 +723,24 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             MaterialTheme {
-                DexteraLauncherApp()
+                val isOnboardingCompleted by onboardingManager.isOnboardingCompleted
+                    .collectAsStateWithLifecycle(initialValue = null)
+
+                Crossfade(targetState = isOnboardingCompleted, label = "onboarding_fade") { completed ->
+                    when (completed) {
+                        null -> { /* Loading state if needed */ }
+                        false -> {
+                            OnboardingScreen(onFinish = {
+                                lifecycleScope.launch {
+                                    onboardingManager.setOnboardingCompleted(true)
+                                }
+                            })
+                        }
+                        true -> {
+                            DexteraLauncherApp()
+                        }
+                    }
+                }
             }
         }
         

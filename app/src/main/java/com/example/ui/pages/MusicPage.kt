@@ -92,7 +92,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.MainActivity
 import com.example.media.MediaController
-import com.example.model.MediaTrackInfo
 import com.example.service.MyNotificationListenerService
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -102,12 +101,13 @@ import kotlin.math.roundToInt
 
 @Composable
 fun MusicPage(
-    trackInfo: MediaTrackInfo?,
     themeColor: Color,
     fontFamily: FontFamily,
     activity: MainActivity,
     modifier: Modifier = Modifier
 ) {
+    val mediaTrackInfoVal by activity.mediaTrackInfo.collectAsState()
+    val trackInfo = mediaTrackInfoVal
     val isNotifGranted by activity.isNotificationPermissionGranted.collectAsState()
 
     if (trackInfo == null) {

@@ -1959,7 +1959,6 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                 Box(modifier = Modifier.fillMaxSize()) {
                                                     if (targetPageName == "Music") {
                                                         MusicPage(
-                                                            trackInfo = mediaTrackInfoVal,
                                                             themeColor = currentThemeColor,
                                                             fontFamily = currentFontFamily,
                                                             activity = activity,

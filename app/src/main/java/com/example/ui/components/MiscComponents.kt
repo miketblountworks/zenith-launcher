@@ -135,15 +135,7 @@ fun WallpaperBackground(wallpaper: String, bingWallpaperUrl: String, blurEnabled
                     val h = size.height
                     when (wallpaper) {
                         "System Wallpaper" -> {
-                            drawRect(
-                                brush = Brush.verticalGradient(
-                                    colors = listOf(
-                                        Color.Black.copy(alpha = 0.35f),
-                                        Color.Transparent,
-                                        Color.Black.copy(alpha = 0.55f)
-                                    )
-                                )
-                            )
+                            // Do not draw anything, let the system wallpaper show through
                         }
                         "Pitch Black" -> {
                             drawRect(color = Color.Black)
