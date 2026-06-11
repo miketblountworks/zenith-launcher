@@ -14,16 +14,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -94,64 +91,63 @@ fun NotificationsPage(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.6f))
-            .windowInsetsPadding(WindowInsets.statusBars)
+            .background(Color.Black.copy(alpha = 0.45f))
     ) {
-        Column(
+        Card(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(top = 16.dp, bottom = 48.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+            shape = RoundedCornerShape(24.dp)
         ) {
-            // Header
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "NOTIFICATION CENTER",
-                    fontSize = 11.sp,
-                    letterSpacing = 0.15.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    fontFamily = fontFamily,
-                    style = TextStyle(
-                        shadow = Shadow(
-                            color = Color.Black.copy(alpha = 0.6f),
-                            offset = Offset(1f, 2f),
-                            blurRadius = 4f
-                        )
-                    )
-                )
-                
-                if (activeNotifications.isNotEmpty()) {
-                    Text(
-                        text = "Clear All",
-                        fontSize = 11.sp,
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = fontFamily,
-                        modifier = Modifier
-                            .clickable {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                try {
-                                    activeNotifications.forEach { item ->
-                                        MyNotificationListenerService.instance?.cancelNotification(item.key)
-                                    }
-                                } catch (_: Exception) {}
-                                activity.notificationList.value = emptyList()
-                            }
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
-                }
-            }
-
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 20.dp)
+                    .padding(20.dp)
             ) {
+                // Header
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "NOTIFICATION CENTER",
+                        fontSize = 11.sp,
+                        letterSpacing = 0.15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        fontFamily = fontFamily,
+                        style = TextStyle(
+                            shadow = Shadow(
+                                color = Color.Black.copy(alpha = 0.6f),
+                                offset = Offset(1f, 2f),
+                                blurRadius = 4f
+                            )
+                        )
+                    )
+
+                    if (activeNotifications.isNotEmpty()) {
+                        Text(
+                            text = "Clear All",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.error,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = fontFamily,
+                            modifier = Modifier
+                                .clickable {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    try {
+                                        activeNotifications.forEach { item ->
+                                            MyNotificationListenerService.instance?.cancelNotification(item.key)
+                                        }
+                                    } catch (_: Exception) {}
+                                    activity.notificationList.value = emptyList()
+                                }
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                }
 
                 // Tabs / Filters
                 val presentCategories = remember(activeNotifications) {
@@ -179,7 +175,7 @@ fun NotificationsPage(
                                 border = null
                             )
                         }
-                        
+
                         presentCategories.forEach { cat ->
                             item {
                                 val isSelected = selectedFilterCategory == cat

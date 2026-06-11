@@ -182,8 +182,8 @@ fun MusicPage(
     }
 
     val isPlaying = trackInfo.isPlaying
-    
-    var realProgressMs by remember(trackInfo.title, trackInfo.isPlaying) { 
+
+    var realProgressMs by remember(trackInfo.title, trackInfo.isPlaying) {
         mutableLongStateOf(trackInfo.progressMs) 
     }
     
@@ -201,7 +201,7 @@ fun MusicPage(
     }
     
     val haptic = LocalHapticFeedback.current
-    
+
     val phaseTransition = rememberInfiniteTransition(label = "waveform_phase_shift")
     val peakShift by phaseTransition.animateFloat(
         initialValue = 0f,
@@ -212,9 +212,9 @@ fun MusicPage(
         ),
         label = "peak_shift"
     )
-    
+
     var hudExpanded by remember { mutableStateOf(false) }
-    
+
     val waveformHeights = remember {
         listOf(
             0.38f, 0.58f, 0.44f, 0.65f, 0.82f, 0.74f, 0.52f, 0.40f, 0.60f, 0.80f,
@@ -327,7 +327,7 @@ fun MusicPage(
                                             if (totalDragY > 70f) {
                                                 gestureTriggered = true
                                                 MediaController.dispatchMediaKey(context, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
-                                                
+
                                                 coroutineScope.launch {
                                                     artworkScale.animateTo(
                                                         targetValue = 0.85f,
@@ -344,7 +344,7 @@ fun MusicPage(
                                                         )
                                                     )
                                                 }
-                                                
+
                                                 feedbackIconState = !isPlaying
                                                 coroutineScope.launch {
                                                     delay(800)
@@ -600,16 +600,16 @@ fun MusicPage(
                                         }
                                         val rawH = waveformHeights[i % waveformHeights.size]
                                         val scaleH = (rawH + animationMod).coerceIn(0.12f, 1.0f)
-                                        
+
                                         val barStartX = i * (barWidth + spacingPx)
                                         val currentBarHeight = drawHeight * scaleH
                                         val barStartY = (drawHeight - currentBarHeight) / 2f
-                                        
+
                                         val barProgressFrac = i.toFloat() / barCount
                                         val isPlayedElement = barProgressFrac <= progressFraction
-                                        
+
                                         val drawColor = if (isPlayedElement) themeColor else unplayedColor
-                                        
+
                                         drawRoundRect(
                                             color = drawColor,
                                             topLeft = Offset(barStartX, barStartY),

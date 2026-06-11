@@ -1,8 +1,6 @@
 package com.example
 
 import android.app.AppOpsManager
-import android.app.WallpaperColors
-import android.app.WallpaperManager
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
@@ -14,8 +12,6 @@ import android.graphics.Rect
 import android.location.Geocoder
 import android.os.Build
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.os.Message
 import android.view.Choreographer
 import android.view.KeyEvent
@@ -646,22 +642,6 @@ class MainActivity : ComponentActivity() {
 
     val homeEntryTrigger = MutableStateFlow(0)
 
-    val isWallpaperLight = MutableStateFlow(false)
-    val isNotificationCenterVisible = MutableStateFlow(false)
-
-    private val wallpaperColorsListener = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
-        WallpaperManager.OnColorsChangedListener { colors, which ->
-            if (which and WallpaperManager.FLAG_SYSTEM != 0) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    val hints = colors?.colorHints ?: 0
-                    isWallpaperLight.value = (hints and WallpaperColors.HINT_SUPPORTS_DARK_TEXT) != 0
-                } else if (colors != null) {
-                    // Fallback or heuristic for older versions if needed, or just default to false
-                }
-            }
-        }
-    } else null
-
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         if (Intent.ACTION_MAIN == intent.action && intent.hasCategory(Intent.CATEGORY_HOME)) {
@@ -778,29 +758,11 @@ class MainActivity : ComponentActivity() {
         decodeAndExtractWallpaperColor()
         registerThermalListener()
         startChoreographerMonitoring()
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
-            val wm = WallpaperManager.getInstance(this)
-            wallpaperColorsListener?.let {
-                wm.addOnColorsChangedListener(it, Handler(Looper.getMainLooper()))
-                wm.getWallpaperColors(WallpaperManager.FLAG_SYSTEM)?.let { colors ->
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        val hints = colors.colorHints
-                        isWallpaperLight.value = (hints and WallpaperColors.HINT_SUPPORTS_DARK_TEXT) != 0
-                    }
-                }
-            }
-        }
     }
 
     override fun onDestroy() {
         super.onDestroy()
         appWidgetHost.stopListening()
         stopChoreographerMonitoring()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
-            wallpaperColorsListener?.let {
-                WallpaperManager.getInstance(this).removeOnColorsChangedListener(it)
-            }
-        }
     }
 }
