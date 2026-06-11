@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -57,6 +58,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
@@ -396,14 +398,14 @@ fun SwipeToDismissNotification(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(20.dp))
     ) {
         Box(
             modifier = Modifier
                 .matchParentSize()
                 .background(
                     color = if (offsetX.value != 0f) MaterialTheme.colorScheme.error.copy(alpha = 0.15f) else Color.Transparent,
-                    shape = RoundedCornerShape(14.dp)
+                    shape = RoundedCornerShape(20.dp)
                 )
                 .padding(horizontal = 16.dp),
             contentAlignment = if (offsetX.value > 0) Alignment.CenterStart else Alignment.CenterEnd
@@ -455,8 +457,10 @@ fun SwipeToDismissNotification(
                     )
                 }
                 .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(14.dp))
-                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(14.dp))
+                .shadow(elevation = 10.dp, shape = RoundedCornerShape(20.dp))
+                .defaultMinSize(minHeight = 84.dp)
+                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(20.dp))
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(20.dp))
                 .padding(12.dp)
         ) {
             Row(

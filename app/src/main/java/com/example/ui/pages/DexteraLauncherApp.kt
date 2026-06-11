@@ -636,6 +636,8 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
             val wsScale = 1.0f - 0.05f * appTransitionProgressVal
             val wsAlpha = 1.0f - appTransitionProgressVal
 
+            val isNotifPage = displayedPages.getOrNull(currentPageIndex) == "Notifications"
+
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -677,6 +679,8 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                             0.0001f
                         } else if (isNotificationsExpanded) {
                             0.80f
+                        } else if (isNotifPage) {
+                            0.12f
                         } else {
                             0.25f
                         },
@@ -688,6 +692,8 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                             0.9998f
                         } else if (isNotificationsExpanded) {
                             0.0001f
+                        } else if (isNotifPage) {
+                            0.63f
                         } else {
                             0.50f
                         },
@@ -759,100 +765,50 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                     
                                     Spacer(modifier = Modifier.height(8.dp))
                                     // Categories Filter
-                                    Box(modifier = clickToCollapseModifier) {
-                                        androidx.compose.foundation.lazy.LazyRow(
-                                            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            item {
-                                                val isAllSelected = selectedCategoryFilter == "All" || selectedCategoryFilter == null
-                                                Box(
-                                                    modifier = Modifier
-                                                        .clip(RoundedCornerShape(16.dp))
-                                                        .background(
-                                                            if (isAllSelected) currentThemeColor.copy(alpha = 0.25f)
-                                                            else Color.White.copy(alpha = 0.12f)
-                                                        )
-                                                        .border(
-                                                            1.dp,
-                                                            if (isAllSelected) currentThemeColor.copy(alpha = 0.5f)
-                                                            else Color.White.copy(alpha = 0.08f),
-                                                            RoundedCornerShape(16.dp)
-                                                        )
-                                                        .clickable { selectedCategoryFilter = "All" }
-                                                ) {
-                                                    Row(
-                                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                                                        verticalAlignment = Alignment.CenterVertically
-                                                    ) {
-                                                        Icon(
-                                                            Icons.Default.Menu, 
-                                                            contentDescription = null, 
-                                                            tint = if (isAllSelected) currentThemeColor else Color.White, 
-                                                            modifier = Modifier.size(16.dp).padding(end = 6.dp)
-                                                        )
-                                                        Text(
-                                                            text = "All Apps",
-                                                            fontSize = 12.sp,
-                                                            fontFamily = currentFontFamily,
-                                                            color = if (isAllSelected) Color.White else Color.White.copy(alpha = 0.9f),
-                                                            fontWeight = if (isAllSelected) FontWeight.Bold else FontWeight.Medium,
-                                                            style = TextStyle(
-                                                                shadow = Shadow(
-                                                                    color = Color.Black.copy(alpha = 0.6f),
-                                                                    offset = Offset(1f, 1f),
-                                                                    blurRadius = 3f
-                                                                )
-                                                            )
-                                                        )
-                                                    }
-                                                }
-                                            }
-
-                                            folderMap.forEach { (name, appsList) ->
+                                    androidx.compose.animation.AnimatedVisibility(
+                                        visible = !isNotifPage,
+                                        enter = fadeIn() + expandVertically(),
+                                        exit = fadeOut() + shrinkVertically()
+                                    ) {
+                                        Box(modifier = clickToCollapseModifier) {
+                                            androidx.compose.foundation.lazy.LazyRow(
+                                                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
                                                 item {
-                                                    val isSelected = selectedCategoryFilter == name
-                                                    val iconVector = when (name.lowercase()) {
-                                                        "social" -> Icons.Default.Person
-                                                        "utilities" -> Icons.Default.Build
-                                                        "media" -> Icons.Default.PlayArrow
-                                                        else -> Icons.AutoMirrored.Filled.List
-                                                    }
-                                                    val textLabel = name
+                                                    val isAllSelected = selectedCategoryFilter == "All" || selectedCategoryFilter == null
                                                     Box(
                                                         modifier = Modifier
                                                             .clip(RoundedCornerShape(16.dp))
                                                             .background(
-                                                                if (isSelected) currentThemeColor.copy(alpha = 0.25f)
+                                                                if (isAllSelected) currentThemeColor.copy(alpha = 0.25f)
                                                                 else Color.White.copy(alpha = 0.12f)
                                                             )
                                                             .border(
                                                                 1.dp,
-                                                                if (isSelected) currentThemeColor.copy(alpha = 0.5f)
+                                                                if (isAllSelected) currentThemeColor.copy(alpha = 0.5f)
                                                                 else Color.White.copy(alpha = 0.08f),
                                                                 RoundedCornerShape(16.dp)
                                                             )
-                                                            .clickable { 
-                                                                selectedCategoryFilter = if (isSelected) "All" else name
-                                                            }
+                                                            .clickable { selectedCategoryFilter = "All" }
                                                     ) {
                                                         Row(
                                                             modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
                                                             verticalAlignment = Alignment.CenterVertically
                                                         ) {
                                                             Icon(
-                                                                iconVector, 
+                                                                Icons.Default.Menu, 
                                                                 contentDescription = null, 
-                                                                tint = if (isSelected) currentThemeColor else Color.White, 
+                                                                tint = if (isAllSelected) currentThemeColor else Color.White, 
                                                                 modifier = Modifier.size(16.dp).padding(end = 6.dp)
                                                             )
                                                             Text(
-                                                                text = "$textLabel (${appsList.size})",
+                                                                text = "All Apps",
                                                                 fontSize = 12.sp,
                                                                 fontFamily = currentFontFamily,
-                                                                color = if (isSelected) Color.White else Color.White.copy(alpha = 0.9f),
-                                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                                color = if (isAllSelected) Color.White else Color.White.copy(alpha = 0.9f),
+                                                                fontWeight = if (isAllSelected) FontWeight.Bold else FontWeight.Medium,
                                                                 style = TextStyle(
                                                                     shadow = Shadow(
                                                                         color = Color.Black.copy(alpha = 0.6f),
@@ -861,6 +817,62 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                                     )
                                                                 )
                                                             )
+                                                        }
+                                                    }
+                                                }
+
+                                                folderMap.forEach { (name, appsList) ->
+                                                    item {
+                                                        val isSelected = selectedCategoryFilter == name
+                                                        val iconVector = when (name.lowercase()) {
+                                                            "social" -> Icons.Default.Person
+                                                            "utilities" -> Icons.Default.Build
+                                                            "media" -> Icons.Default.PlayArrow
+                                                            else -> Icons.AutoMirrored.Filled.List
+                                                        }
+                                                        val textLabel = name
+                                                        Box(
+                                                            modifier = Modifier
+                                                                .clip(RoundedCornerShape(16.dp))
+                                                                .background(
+                                                                    if (isSelected) currentThemeColor.copy(alpha = 0.25f)
+                                                                    else Color.White.copy(alpha = 0.12f)
+                                                                )
+                                                                .border(
+                                                                    1.dp,
+                                                                    if (isSelected) currentThemeColor.copy(alpha = 0.5f)
+                                                                    else Color.White.copy(alpha = 0.08f),
+                                                                    RoundedCornerShape(16.dp)
+                                                                )
+                                                                .clickable { 
+                                                                    selectedCategoryFilter = if (isSelected) "All" else name
+                                                                }
+                                                        ) {
+                                                            Row(
+                                                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                                                                verticalAlignment = Alignment.CenterVertically
+                                                            ) {
+                                                                Icon(
+                                                                    iconVector, 
+                                                                    contentDescription = null, 
+                                                                    tint = if (isSelected) currentThemeColor else Color.White, 
+                                                                    modifier = Modifier.size(16.dp).padding(end = 6.dp)
+                                                                )
+                                                                Text(
+                                                                    text = "$textLabel (${appsList.size})",
+                                                                    fontSize = 12.sp,
+                                                                    fontFamily = currentFontFamily,
+                                                                    color = if (isSelected) Color.White else Color.White.copy(alpha = 0.9f),
+                                                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                                    style = TextStyle(
+                                                                        shadow = Shadow(
+                                                                            color = Color.Black.copy(alpha = 0.6f),
+                                                                            offset = Offset(1f, 1f),
+                                                                            blurRadius = 3f
+                                                                        )
+                                                                    )
+                                                                )
+                                                            }
                                                         }
                                                     }
                                                 }

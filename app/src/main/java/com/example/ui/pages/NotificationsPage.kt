@@ -12,6 +12,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,7 +24,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -44,6 +45,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
@@ -248,11 +250,36 @@ fun NotificationsPage(
                     groups.toList()
                 }
 
+                val listSize = groupedNotifications.size
+                val middle = Int.MAX_VALUE / 2
+                val startIndex = if (listSize > 0) middle - (middle % listSize) else 0
+                val listState = rememberLazyListState(initialFirstVisibleItemIndex = startIndex)
+
                 LazyColumn(
-                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    state = listState,
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .graphicsLayer { alpha = 0.99f }
+                        .drawWithContent {
+                            drawContent()
+                            val topFadePx = 24.dp.toPx()
+                            val bottomFadePx = 90.dp.toPx()
+                            drawRect(
+                                brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                                    0.0f to Color.Transparent,
+                                    (topFadePx / size.height) to Color.Black,
+                                    1f - (bottomFadePx / size.height) to Color.Black,
+                                    1.0f to Color.Transparent
+                                ),
+                                blendMode = androidx.compose.ui.graphics.BlendMode.DstIn
+                            )
+                        },
+                    contentPadding = PaddingValues(top = 24.dp, bottom = 120.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(groupedNotifications, key = { it.first }) { (pkg, groupList) ->
+                    items(count = if (listSize > 0) Int.MAX_VALUE else 0) { index ->
+                        val (pkg, groupList) = groupedNotifications[index % listSize]
                         if (groupList.size == 1) {
                             val item = groupList[0]
                             SwipeToDismissNotification(
