@@ -85,7 +85,6 @@ import com.example.MainActivity
 import com.example.model.AppInfo
 import com.example.model.AppNotification
 import com.example.service.MyNotificationListenerService
-import com.example.ui.components.AdvancedSearchBar
 import com.example.ui.components.GroupedNotificationStack
 import com.example.ui.components.SwipeToDismissNotification
 import com.example.utils.getNotificationCategory
@@ -100,9 +99,6 @@ fun NotificationsPage(
     modifier: Modifier = Modifier,
     onLongPressApp: ((AppInfo) -> Unit)? = null,
     onNotificationClick: (appName: String, text: String, defaultPkg: String) -> Unit,
-    onSearchQueryChange: (String) -> Unit = {},
-    onSearchFocusChange: (Boolean) -> Unit = {},
-    onSearchExecute: () -> Unit = {},
     contentColor: Color = Color.White
 ) {
     val haptic = LocalHapticFeedback.current
@@ -132,7 +128,6 @@ fun NotificationsPage(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = 80.dp)
         ) {
             Column(
                 modifier = Modifier
@@ -255,7 +250,7 @@ fun NotificationsPage(
                                     blendMode = androidx.compose.ui.graphics.BlendMode.DstIn
                                 )
                             },
-                        contentPadding = PaddingValues(top = 32.dp, bottom = 24.dp),
+                        contentPadding = PaddingValues(top = 32.dp, bottom = 120.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         items(count = if (listSize > 0) Int.MAX_VALUE else 0) { index ->
@@ -399,36 +394,6 @@ fun NotificationsPage(
                             }
                         }
                     }
-                }
-            }
-        }
-
-        // Integrated Search Bar
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 8.dp)
-                .fillMaxWidth()
-                .height(64.dp)
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(32.dp))
-                .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f), RoundedCornerShape(32.dp))
-                .padding(horizontal = 16.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                Icon(imageVector = Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f), modifier = Modifier.size(24.dp))
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = "Search contacts, apps, web...",
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                    fontSize = 15.sp,
-                    fontFamily = fontFamily,
-                    modifier = Modifier.weight(1f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Box(modifier = Modifier.size(36.dp).background(Color(0xFF9C27B0), CircleShape), contentAlignment = Alignment.Center) {
-                    Text(text = "MT", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }

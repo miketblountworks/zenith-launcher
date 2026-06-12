@@ -44,6 +44,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -956,7 +957,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                         .padding(horizontal = 14.dp),
                                     verticalArrangement = Arrangement.Bottom,
                                     reverseLayout = true,
-                                    contentPadding = PaddingValues(top = 16.dp, bottom = 24.dp)
+                                    contentPadding = PaddingValues(top = 16.dp, bottom = 120.dp)
                                 ) {
                                     // CATEGORY FILTER CHIPS
                                     item {
@@ -1480,7 +1481,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                         LazyColumn(
                                             state = listState,
                                             modifier = Modifier.fillMaxHeight().weight(1.0f).graphicsLayer { clip = false },
-                                            contentPadding = PaddingValues(bottom = 100.dp, start = 24.dp)
+                                            contentPadding = PaddingValues(bottom = 120.dp, start = 24.dp)
                                         ) {
                                             if (categoriseByUsageVal && searchQuery.isEmpty()) {
                                                 if (topNApps.isNotEmpty()) {
@@ -1925,140 +1926,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                         }
                     }
 
-                    val isNotifPage = displayedPages.getOrNull(currentPageIndex) == "Notifications"
 
-                    androidx.compose.animation.AnimatedVisibility(
-                        visible = !isNotificationsExpanded && !isNotifPage,
-                        enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
-                        exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top)
-                    ) {
-                        AdvancedSearchBar(
-                            query = searchQuery,
-                            onQueryChange = {
-                                searchQuery = it
-                                activity.fetchWebSuggestions(it)
-                            },
-                            fontFamily = currentFontFamily,
-                            primaryColor = currentThemeColor,
-                            onSearchWeb = { q ->
-                                try {
-                                    val intent = Intent(Intent.ACTION_WEB_SEARCH).apply {
-                                        putExtra(android.app.SearchManager.QUERY, q)
-                                    }
-                                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                    context.startActivity(intent)
-                                } catch (_: Exception) {}
-                            },
-                            isSearchFocused = isSearchFocused,
-                            onFocusChanged = { isSearchFocused = it },
-                            onSearchExecute = {
-                                val hasLocalMatch = displayedResults.any {
-                                    it is SearchResult.AppResult ||
-                                    it is SearchResult.ContactResult ||
-                                    it is SearchResult.SettingResult ||
-                                    it is SearchResult.FileResult
-                                }
-                                if (hasLocalMatch) {
-                                    val topResult = displayedResults.firstOrNull { it !is SearchResult.WebResult } ?: displayedResults.firstOrNull()
-                                    if (topResult != null) {
-                                        UniversalSearchEngine.recordSelection(contextForSearch, topResult)
-                                        when (topResult) {
-                                            is SearchResult.ContactResult -> {
-                                                                if (topResult.isRoomUser) {
-                                                                    val userId = topResult.id.removePrefix("room_").toIntOrNull()
-                                                                    val match = allUsersVal.find { it.id == userId }
-                                                                    if (match != null) {
-                                                                        selectedUser = match
-                                                                    } else {
-                                                                        try {
-                                                                            val intent = Intent(Intent.ACTION_DIAL, "tel:${topResult.phoneNumber}".toUri())
-                                                                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                                                            contextForSearch.startActivity(intent)
-                                                                        } catch (_: Exception) {}
-                                                                    }
-                                                                } else {
-                                                                    try {
-                                                                        val intent = Intent(Intent.ACTION_DIAL, "tel:${topResult.phoneNumber}".toUri())
-                                                                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                                                        contextForSearch.startActivity(intent)
-                                                                    } catch (_: Exception) {}
-                                                                }
-                                            }
-                                            is SearchResult.AppResult -> {
-                                                val isLimitedApp = topResult.packageName in limitedAppsSet
-                                                val appInfo = uiState.apps.find { it.packageName == topResult.packageName }
-                                                if (isLimitedApp && appInfo != null) {
-                                                    activeBreakerApp = appInfo
-                                                } else {
-                                                    activity.launchAppWithTracker(topResult.packageName)
-                                                }
-                                            }
-                                            is SearchResult.WebResult -> {
-                                                try {
-                                                    val intent = Intent(Intent.ACTION_WEB_SEARCH).apply {
-                                                        putExtra(android.app.SearchManager.QUERY, topResult.label)
-                                                    }
-                                                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                                    contextForSearch.startActivity(intent)
-                                                } catch (_: Exception) {
-                                                    try {
-                                                        val intent = Intent(Intent.ACTION_VIEW, "https://www.google.com/search?q=${java.net.URLEncoder.encode(topResult.label, "UTF-8")}".toUri())
-                                                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                                        contextForSearch.startActivity(intent)
-                                                    } catch (_: Exception) {}
-                                                }
-                                            }
-                                            is SearchResult.SettingResult -> {
-                                                if (topResult.action.startsWith("launcher_")) {
-                                                    val cat = when (topResult.action) {
-                                                        "launcher_perf" -> "Performance"
-                                                        "launcher_gestures" -> "Gestures"
-                                                        "launcher_permissions" -> "Permissions"
-                                                        "launcher_search" -> "Search"
-                                                        "launcher_pages" -> "Pages"
-                                                        else -> null
-                                                    }
-                                                    activeSettingsCategory = cat
-                                                    showSettingsPanel = true
-                                                    focusManager.clearFocus()
-                                                } else {
-                                                    try {
-                                                        val intent = Intent(topResult.action)
-                                                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                                        contextForSearch.startActivity(intent)
-                                                    } catch (_: Exception) {}
-                                                }
-                                            }
-                                            is SearchResult.FileResult -> {
-                                                Toast.makeText(contextForSearch, "Opening match: ${topResult.label}", Toast.LENGTH_SHORT).show()
-                                            }
-                                        }
-                                        searchQuery = ""
-                                        isSearchFocused = false
-                                    }
-                                } else {
-                                    val webSearchQuery = displayedResults.find { it is SearchResult.WebResult }?.label ?: searchQuery
-                                    if (webSearchQuery.trim().isNotEmpty()) {
-                                        try {
-                                            val intent = Intent(Intent.ACTION_WEB_SEARCH).apply {
-                                                putExtra(android.app.SearchManager.QUERY, webSearchQuery)
-                                            }
-                                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                            contextForSearch.startActivity(intent)
-                                        } catch (_: Exception) {
-                                            try {
-                                                val intent = Intent(Intent.ACTION_VIEW, "https://www.google.com/search?q=${java.net.URLEncoder.encode(webSearchQuery, "UTF-8")}".toUri())
-                                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                                contextForSearch.startActivity(intent)
-                                            } catch (_: Exception) {}
-                                        }
-                                    }
-                                    searchQuery = ""
-                                    isSearchFocused = false
-                                }
-                            }
-                        )
-                    }
                 }
 
             }
@@ -2383,6 +2251,144 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                     }
                 }
             }
+        }
+
+        // Global Floating Search Bar
+        androidx.compose.animation.AnimatedVisibility(
+            visible = !isNotificationsExpanded && !isLaunchingAppVal && !isClosingAppVal,
+            enter = fadeIn() + slideInVertically(initialOffsetY = { it / 2 }),
+            exit = fadeOut() + slideOutVertically(targetOffsetY = { it / 2 }),
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
+        ) {
+            AdvancedSearchBar(
+                query = searchQuery,
+                onQueryChange = {
+                    searchQuery = it
+                    activity.fetchWebSuggestions(it)
+                },
+                fontFamily = currentFontFamily,
+                onSearchWeb = { q ->
+                    try {
+                        val intent = Intent(Intent.ACTION_WEB_SEARCH).apply {
+                            putExtra(android.app.SearchManager.QUERY, q)
+                        }
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        context.startActivity(intent)
+                    } catch (_: Exception) {}
+                },
+                isSearchFocused = isSearchFocused,
+                onFocusChanged = { isSearchFocused = it },
+                onSearchExecute = {
+                    val hasLocalMatch = displayedResults.any {
+                        it is SearchResult.AppResult ||
+                        it is SearchResult.ContactResult ||
+                        it is SearchResult.SettingResult ||
+                        it is SearchResult.FileResult
+                    }
+                    if (hasLocalMatch) {
+                        val topResult = displayedResults.firstOrNull { it !is SearchResult.WebResult } ?: displayedResults.firstOrNull()
+                        if (topResult != null) {
+                            UniversalSearchEngine.recordSelection(contextForSearch, topResult)
+                            when (topResult) {
+                                is SearchResult.ContactResult -> {
+                                    if (topResult.isRoomUser) {
+                                        val userId = topResult.id.removePrefix("room_").toIntOrNull()
+                                        val match = allUsersVal.find { it.id == userId }
+                                        if (match != null) {
+                                            selectedUser = match
+                                        } else {
+                                            try {
+                                                val intent = Intent(Intent.ACTION_DIAL, "tel:${topResult.phoneNumber}".toUri())
+                                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                                contextForSearch.startActivity(intent)
+                                            } catch (_: Exception) {}
+                                        }
+                                    } else {
+                                        try {
+                                            val intent = Intent(Intent.ACTION_DIAL, "tel:${topResult.phoneNumber}".toUri())
+                                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                            contextForSearch.startActivity(intent)
+                                        } catch (_: Exception) {}
+                                    }
+                                }
+                                is SearchResult.AppResult -> {
+                                    val isLimitedApp = topResult.packageName in limitedAppsSet
+                                    val appInfo = uiState.apps.find { it.packageName == topResult.packageName }
+                                    if (isLimitedApp && appInfo != null) {
+                                        activeBreakerApp = appInfo
+                                    } else {
+                                        activity.launchAppWithTracker(topResult.packageName)
+                                    }
+                                }
+                                is SearchResult.WebResult -> {
+                                    try {
+                                        val intent = Intent(Intent.ACTION_WEB_SEARCH).apply {
+                                            putExtra(android.app.SearchManager.QUERY, topResult.label)
+                                        }
+                                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                        contextForSearch.startActivity(intent)
+                                    } catch (e: Exception) {
+                                        try {
+                                            val intent = Intent(Intent.ACTION_VIEW, "https://www.google.com/search?q=${java.net.URLEncoder.encode(topResult.label, "UTF-8")}".toUri())
+                                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                            contextForSearch.startActivity(intent)
+                                        } catch (_: Exception) {}
+                                    }
+                                }
+                                is SearchResult.SettingResult -> {
+                                    if (topResult.action.startsWith("launcher_")) {
+                                        val cat = when (topResult.action) {
+                                            "launcher_perf" -> "Performance"
+                                            "launcher_gestures" -> "Gestures"
+                                            "launcher_permissions" -> "Permissions"
+                                            "launcher_search" -> "Search"
+                                            "launcher_pages" -> "Pages"
+                                            else -> null
+                                        }
+                                        activeSettingsCategory = cat
+                                        showSettingsPanel = true
+                                        focusManager.clearFocus()
+                                    } else {
+                                        try {
+                                            val intent = Intent(topResult.action)
+                                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                            contextForSearch.startActivity(intent)
+                                        } catch (_: Exception) {}
+                                    }
+                                }
+                                is SearchResult.FileResult -> {
+                                    Toast.makeText(contextForSearch, "Opening match: ${topResult.label}", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                            searchQuery = ""
+                            isSearchFocused = false
+                        }
+                    } else {
+                        val webSearchQuery = displayedResults.find { it is SearchResult.WebResult }?.label ?: searchQuery
+                        if (webSearchQuery.trim().isNotEmpty()) {
+                            try {
+                                val intent = Intent(Intent.ACTION_WEB_SEARCH).apply {
+                                    putExtra(android.app.SearchManager.QUERY, webSearchQuery)
+                                }
+                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                contextForSearch.startActivity(intent)
+                            } catch (_: Exception) {
+                                try {
+                                    val intent = Intent(Intent.ACTION_VIEW, "https://www.google.com/search?q=${java.net.URLEncoder.encode(webSearchQuery, "UTF-8")}".toUri())
+                                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    contextForSearch.startActivity(intent)
+                                } catch (_: Exception) {}
+                            }
+                        }
+                        searchQuery = ""
+                        isSearchFocused = false
+                    }
+                }
+            )
         }
     }
 }
