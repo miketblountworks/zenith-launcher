@@ -68,7 +68,7 @@ fun MusicPage(
     val isNotifGranted by activity.isNotificationPermissionGranted.collectAsState()
 
     if (trackInfo == null) {
-        Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Box(modifier = modifier.fillMaxSize().padding(bottom = 120.dp), contentAlignment = Alignment.Center) {
             Card(
                 modifier = Modifier.fillMaxWidth(0.92f).padding(16.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.Transparent),
@@ -127,7 +127,7 @@ fun MusicPage(
     val coercedVolume = currentVolume.toFloat().coerceIn(0f, maxVolFloat)
 
     Box(
-        modifier = modifier.fillMaxSize().clickable(
+        modifier = modifier.fillMaxSize().padding(bottom = 120.dp).clickable(
             interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
             indication = null, onClick = {}
         ),
@@ -138,22 +138,27 @@ fun MusicPage(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            // 1. Artwork with Integrated Metadata Overlay
+            // 1. Artwork with Integrated Metadata Overlay & Gesture Controls
             Box(
                 modifier = Modifier
                     .fillMaxWidth(0.95f)
                     .aspectRatio(1.6f)
                     .graphicsLayer { scaleX = artworkScale.value; scaleY = artworkScale.value }
-                    .pointerInput(isPlaying) {
-                        detectTapGestures(
-                            onTap = {
+                    .pointerInput(Unit) {
+                        detectVerticalDragGestures(
+                            onDragEnd = { /* Reset animations if needed */ }
+                        ) { change, dragAmount ->
+                            change.consume()
+                            // Swiping down (dragAmount > 0) toggles Play/Pause
+                            if (dragAmount > 35f) {
                                 MediaController.dispatchMediaKey(activity, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 coroutineScope.launch {
                                     artworkScale.animateTo(0.95f, tween(100))
                                     artworkScale.animateTo(1.0f, spring(dampingRatio = Spring.DampingRatioMediumBouncy))
                                 }
                             }
-                        )
+                        }
                     }
                     .pointerInput(Unit) {
                         var totalDragX = 0f
@@ -267,41 +272,15 @@ fun MusicPage(
                 )
             }
 
-            // 4. Timestamps & Controls (Below Progress)
+            // 4. Timestamps
             Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     val formatMs: (Long) -> String = { ms -> String.format(Locale.getDefault(), "%d:%02d", ms/60000, (ms%60000)/1000) }
                     Text(formatMs(realProgressMs), fontSize = 12.sp, color = contentColor.copy(alpha = 0.9f), fontWeight = FontWeight.Bold, fontFamily = fontFamily)
                     Text(formatMs(trackInfo.durationMs), fontSize = 12.sp, color = contentColor.copy(alpha = 0.9f), fontWeight = FontWeight.Bold, fontFamily = fontFamily)
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(onClick = { MediaController.dispatchMediaKey(activity, KeyEvent.KEYCODE_MEDIA_PREVIOUS) }) {
-                        Icon(Icons.Default.SkipPrevious, null, tint = contentColor, modifier = Modifier.size(36.dp))
-                    }
-
-                    // Solid Rounded Play Button
-                    Box(
-                        modifier = Modifier
-                            .size(68.dp)
-                            .background(themeColor, CircleShape)
-                            .shadow(16.dp, CircleShape, spotColor = themeColor)
-                            .clickable { MediaController.dispatchMediaKey(activity, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE) },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow, null, tint = Color.White, modifier = Modifier.size(36.dp))
-                    }
-
-                    IconButton(onClick = { MediaController.dispatchMediaKey(activity, KeyEvent.KEYCODE_MEDIA_NEXT) }) {
-                        Icon(Icons.Default.SkipNext, null, tint = contentColor, modifier = Modifier.size(36.dp))
-                    }
                 }
             }
         }

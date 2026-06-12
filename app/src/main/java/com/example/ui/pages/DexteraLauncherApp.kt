@@ -1727,6 +1727,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                 .fillMaxHeight(0.85f)
                                                 .align(Alignment.CenterVertically)
                                                 .width(48.dp)
+                                                .padding(bottom = 120.dp)
                                                 .drawWithContent {
                                                     drawContent()
                                                     drawRect(
