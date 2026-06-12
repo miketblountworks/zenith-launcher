@@ -1827,7 +1827,9 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                             themeColor = currentThemeColor,
                                                             fontFamily = currentFontFamily,
                                                             activity = activity,
-                                                            modifier = Modifier.fillMaxSize().background(Color.Transparent)
+                                                            modifier = Modifier.fillMaxSize().background(Color.Transparent),
+                                                            contentColor = adaptiveTextColor,
+                                                            shadowColor = if (isLightBackground) Color.White.copy(alpha = 0.4f) else Color.Black.copy(alpha = 0.6f)
                                                         )
                                                     } else if (targetPageName == "Notifications") {
                                                         NotificationsPage(
