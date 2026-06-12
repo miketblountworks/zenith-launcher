@@ -14,6 +14,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -462,15 +463,19 @@ fun SwipeToDismissNotification(
                 }
             }
 
-            // Action Buttons Row (Placed BELOW the main content Row)
+            // Action Buttons Row - Using horizontalScroll to prevent clipping/wrapping
             val actions = item.sbn?.notification?.actions
             if (actions != null && actions.isNotEmpty()) {
+                val actionsScrollState = rememberScrollState()
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(start = 58.dp),
-                    horizontalArrangement = Arrangement.spacedBy(32.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 58.dp)
+                        .horizontalScroll(actionsScrollState),
+                    horizontalArrangement = Arrangement.spacedBy(24.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    actions.take(3).forEachIndexed { index, action ->
+                    actions.forEachIndexed { index, action ->
                         val remoteInputs = action.remoteInputs
                         val isReply = remoteInputs != null && remoteInputs.isNotEmpty()
                         
@@ -480,6 +485,8 @@ fun SwipeToDismissNotification(
                             fontWeight = FontWeight.Bold,
                             color = actionTextColor,
                             fontFamily = fontFamily,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                             modifier = Modifier
                                 .clickable {
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
