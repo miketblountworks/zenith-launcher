@@ -5,6 +5,9 @@ import android.app.Notification
 import android.content.Intent
 import android.os.Build
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -423,8 +426,8 @@ fun NotificationsPage(
         // Expanded Notification Popup Overlay
         AnimatedVisibility(
             visible = expandedNotification != null,
-            enter = fadeIn() + slideInVertically { it / 2 },
-            exit = fadeOut() + slideOutVertically { it / 2 }
+            enter = slideInVertically(initialOffsetY = { it }, animationSpec = tween(durationMillis = 300, easing = LinearOutSlowInEasing)) + fadeIn(animationSpec = tween(durationMillis = 300)),
+            exit = slideOutVertically(targetOffsetY = { it }, animationSpec = tween(durationMillis = 250, easing = FastOutLinearInEasing)) + fadeOut(animationSpec = tween(durationMillis = 250))
         ) {
             Box(
                 modifier = Modifier
