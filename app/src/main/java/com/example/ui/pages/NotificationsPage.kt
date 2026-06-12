@@ -4,6 +4,7 @@ import android.app.ActivityOptions
 import android.app.Notification
 import android.content.Intent
 import android.os.Build
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
@@ -84,6 +85,7 @@ import com.example.MainActivity
 import com.example.model.AppInfo
 import com.example.model.AppNotification
 import com.example.service.MyNotificationListenerService
+import com.example.ui.components.AdvancedSearchBar
 import com.example.ui.components.GroupedNotificationStack
 import com.example.ui.components.SwipeToDismissNotification
 import com.example.utils.getNotificationCategory
@@ -98,6 +100,9 @@ fun NotificationsPage(
     modifier: Modifier = Modifier,
     onLongPressApp: ((AppInfo) -> Unit)? = null,
     onNotificationClick: (appName: String, text: String, defaultPkg: String) -> Unit,
+    onSearchQueryChange: (String) -> Unit = {},
+    onSearchFocusChange: (Boolean) -> Unit = {},
+    onSearchExecute: () -> Unit = {},
     contentColor: Color = Color.White
 ) {
     val haptic = LocalHapticFeedback.current
@@ -112,13 +117,18 @@ fun NotificationsPage(
 
     val expandedGroups = remember { mutableStateMapOf<String, Boolean>() }
     var expandedNotification by remember { mutableStateOf<AppNotification?>(null) }
+    var cachedNotification by remember { mutableStateOf(expandedNotification) }
+    
+    if (expandedNotification != null) {
+        cachedNotification = expandedNotification
+    }
 
     Box(
         modifier = modifier
             .fillMaxSize()
             .padding(horizontal = 8.dp, vertical = 16.dp)
     ) {
-        // Main Container - Transparent
+        // Main Content - Transparent
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -424,10 +434,14 @@ fun NotificationsPage(
         }
 
         // Expanded Notification Popup Overlay
+        BackHandler(enabled = expandedNotification != null) {
+            expandedNotification = null
+        }
+
         AnimatedVisibility(
             visible = expandedNotification != null,
-            enter = slideInVertically(initialOffsetY = { it }, animationSpec = tween(durationMillis = 300, easing = LinearOutSlowInEasing)) + fadeIn(animationSpec = tween(durationMillis = 300)),
-            exit = slideOutVertically(targetOffsetY = { it }, animationSpec = tween(durationMillis = 250, easing = FastOutLinearInEasing)) + fadeOut(animationSpec = tween(durationMillis = 250))
+            enter = fadeIn(animationSpec = tween(300)) + slideInVertically(initialOffsetY = { it / 2 }, animationSpec = tween(300)),
+            exit = fadeOut(animationSpec = tween(250)) + slideOutVertically(targetOffsetY = { it / 2 }, animationSpec = tween(250))
         ) {
             Box(
                 modifier = Modifier
@@ -438,7 +452,7 @@ fun NotificationsPage(
                     },
                 contentAlignment = Alignment.BottomCenter
             ) {
-                expandedNotification?.let { item ->
+                cachedNotification?.let { item ->
                     val dismissState = rememberSwipeToDismissBoxState(
                         confirmValueChange = {
                             if (it == SwipeToDismissBoxValue.EndToStart) {
