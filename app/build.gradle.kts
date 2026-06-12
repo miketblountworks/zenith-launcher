@@ -33,13 +33,11 @@ android {
       keyAlias = "upload"
       keyPassword = System.getenv("KEY_PASSWORD")
     }
-    create("debugConfig") {
+    getByName("debug") {
       val localKeystore = file("${rootDir}/debug.keystore")
-      val defaultKeystore = file("${System.getProperty("user.home")}/.android/debug.keystore")
-      storeFile = if (localKeystore.exists()) localKeystore else defaultKeystore
-      storePassword = "android"
-      keyAlias = "androiddebugkey"
-      keyPassword = "android"
+      if (localKeystore.exists()) {
+        storeFile = localKeystore
+      }
     }
   }
 
@@ -60,7 +58,7 @@ android {
       signingConfig = if (file(System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks").exists()) {
         signingConfigs.getByName("release")
       } else {
-        signingConfigs.getByName("debugConfig")
+        signingConfigs.getByName("debug")
       }
 
       // Extra packaging optimizations for smaller/faster APKs
@@ -95,7 +93,7 @@ android {
       isMinifyEnabled = false
       isShrinkResources = false
       isDebuggable = true
-      signingConfig = signingConfigs.getByName("debugConfig")
+      signingConfig = signingConfigs.getByName("debug")
     }
   }
   compileOptions {
