@@ -20,6 +20,9 @@ android {
     versionName = "3.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+    // Guarantee the field exists for compilation in all environments (secrets plugin will provide real value when .env present)
+    buildConfigField("String", "GEMINI_API_KEY", "\"MY_GEMINI_API_KEY\"")
   }
 
   signingConfigs {
@@ -42,29 +45,97 @@ android {
 
   buildTypes {
     release {
+      // === MAJOR SIZE & PERFORMANCE OPTIMIZATIONS ===
       isCrunchPngs = false
-      isMinifyEnabled = false
-      proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-      signingConfig = signingConfigs.getByName("release")
+      isMinifyEnabled = true          // R8: shrink, optimize, obfuscate
+      isShrinkResources = true        // Remove unused resources (pairs great with minify)
+      isDebuggable = false
+      isProfileable = true            // Allow profiling of release builds (useful for Baseline Profiles)
+      proguardFiles(
+        getDefaultProguardFile("proguard-android-optimize.txt"),
+        "src/main/proguard-rules.pro"   // Project-specific rules (moved into src/main for cleanliness)
+      )
+      // Use debug keystore for local "release" testing if the real upload key is not present.
+      // Remove this fallback (or set KEYSTORE_PATH etc.) for real Play Store uploads.
+      signingConfig = if (file(System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks").exists()) {
+        signingConfigs.getByName("release")
+      } else {
+        signingConfigs.getByName("debugConfig")
+      }
+
+      // Extra packaging optimizations for smaller/faster APKs
+      packaging {
+        resources {
+          excludes += listOf(
+            "META-INF/*.version",
+            "META-INF/DEPENDENCIES",
+            "META-INF/LICENSE*",
+            "META-INF/NOTICE*",
+            "META-INF/ASL2.0",
+            "META-INF/LGPL2.1",
+            "META-INF/gradle/incremental.annotation.processors",
+            "META-INF/*.properties",
+            "META-INF/*.xml",
+            "META-INF/proguard/*",
+            "META-INF/rxjava.properties",
+            "**/attach_hotspot_windows.dll",
+            "META-INF/versions/9/module-info.class"
+          )
+        }
+        // dex and jni compression (Play App Bundle handles this well)
+        jniLibs {
+          useLegacyPackaging = false
+        }
+        dex {
+          useLegacyPackaging = false
+        }
+      }
     }
     debug {
+      isMinifyEnabled = true
+      isShrinkResources = true
+      isDebuggable = true
       signingConfig = signingConfigs.getByName("debugConfig")
     }
   }
   compileOptions {
     sourceCompatibility = JavaVersion.VERSION_11
     targetCompatibility = JavaVersion.VERSION_11
+    // isCoreLibraryDesugaringEnabled can be enabled later with a compatible JDK + desugar_jdk_libs
   }
+
   buildFeatures {
     compose = true
     buildConfig = true
+    // viewBinding and dataBinding left disabled (Compose only project)
   }
   lint {
     abortOnError = false
     checkReleaseBuilds = false
+    // You can enable specific checks in CI if desired:
+    // disable += listOf("MissingTranslation", "UnusedResources")
   }
+
   testOptions { unitTests { isIncludeAndroidResources = true } }
   buildToolsVersion = "37.0.0"
+
+  // === BASELINE PROFILES (huge cold-start win for a launcher) ===
+  // Place optimized profile at: src/main/baselineProfiles/baseline-prof.txt
+  // It will be merged into the release APK/AAB when minify is enabled.
+  // Combined with ProfileInstaller dependency above, this pre-compiles critical paths.
+
+  // Top-level packaging options (applies to all variants, release overrides more)
+  packaging {
+    resources {
+      excludes += listOf(
+        "**/LICENSE.txt",
+        "**/LICENSE",
+        "**/NOTICE",
+        "META-INF/CHANGES",
+        "META-INF/CHANGES.txt"
+      )
+    }
+  }
 }
 
 // Configure the Secrets Gradle Plugin to use .env and .env.example files
@@ -127,4 +198,8 @@ dependencies {
   debugImplementation(libs.androidx.compose.ui.tooling)
   "ksp"(libs.androidx.room.compiler)
   "ksp"(libs.moshi.kotlin.codegen)
+
+  // === RUNTIME + STARTUP OPTIMIZATIONS ===
+  // ProfileInstaller + Baseline Profiles = dramatically faster cold starts for launchers
+  implementation("androidx.profileinstaller:profileinstaller:1.4.1")
 }
