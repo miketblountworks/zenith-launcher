@@ -55,6 +55,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
@@ -419,7 +420,7 @@ fun NotificationsPage(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.6f))
+                    .background(Color.Transparent)
                     .pointerInput(Unit) {
                         detectTapGestures(onTap = { expandedNotification = null })
                     },
@@ -430,7 +431,8 @@ fun NotificationsPage(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 100.dp, start = 12.dp, end = 12.dp)
-                            .wrapContentHeight(),
+                            .wrapContentHeight()
+                            .shadow(elevation = 16.dp, shape = RoundedCornerShape(28.dp)),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
                         shape = RoundedCornerShape(28.dp),
                         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
