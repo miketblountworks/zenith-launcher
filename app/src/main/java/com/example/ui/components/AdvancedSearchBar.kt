@@ -41,7 +41,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalDensity
@@ -124,12 +126,18 @@ fun AdvancedSearchBar(
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp),
+                .height(56.dp)
+                .shadow(
+                    elevation = if (isSearchActive) 12.dp else 0.dp,
+                    shape = RoundedCornerShape(cornerRadius),
+                    spotColor = primaryColor.copy(alpha = 0.5f)
+                ),
             shape = RoundedCornerShape(cornerRadius),
             color = containerColor,
             border = BorderStroke(
-                width = 1.dp,
-                color = if (isSearchActive) primaryColor.copy(alpha = 0.4f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                width = if (isSearchActive) 1.5.dp else 1.dp,
+                brush = if (isSearchActive) Brush.sweepGradient(listOf(primaryColor, Color(0xFF8E2DE2), primaryColor)) 
+                        else SolidColor(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
             )
         ) {
             Row(

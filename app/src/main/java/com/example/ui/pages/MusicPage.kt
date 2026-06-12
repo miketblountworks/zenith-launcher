@@ -1,5 +1,6 @@
 package com.example.ui.pages
 
+import android.provider.Settings
 import android.view.KeyEvent
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -66,7 +68,6 @@ fun MusicPage(
     val isNotifGranted by activity.isNotificationPermissionGranted.collectAsState()
 
     if (trackInfo == null) {
-        // Precise Empty State
         Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Card(
                 modifier = Modifier.fillMaxWidth(0.92f).padding(16.dp),
@@ -113,6 +114,17 @@ fun MusicPage(
     val haptic = LocalHapticFeedback.current
     val coroutineScope = rememberCoroutineScope()
     val artworkScale = remember { Animatable(1f) }
+    val context = LocalContext.current
+    val audioManager = remember(context) { context.getSystemService(android.content.Context.AUDIO_SERVICE) as android.media.AudioManager }
+    val activeController = MyNotificationListenerService.activeController
+    val playbackInfo = activeController?.playbackInfo
+
+    val maxVolume = playbackInfo?.maxVolume ?: audioManager.getStreamMaxVolume(android.media.AudioManager.STREAM_MUSIC)
+    var currentVolume by remember(playbackInfo?.currentVolume) {
+        mutableIntStateOf(playbackInfo?.currentVolume ?: audioManager.getStreamVolume(android.media.AudioManager.STREAM_MUSIC))
+    }
+    val maxVolFloat = if (maxVolume <= 0) 15f else maxVolume.toFloat()
+    val coercedVolume = currentVolume.toFloat().coerceIn(0f, maxVolFloat)
 
     Box(
         modifier = modifier.fillMaxSize().clickable(
@@ -124,7 +136,7 @@ fun MusicPage(
         Column(
             modifier = Modifier.fillMaxSize().padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             // 1. Artwork with Integrated Metadata Overlay
             Box(
@@ -140,8 +152,7 @@ fun MusicPage(
                                     artworkScale.animateTo(0.95f, tween(100))
                                     artworkScale.animateTo(1.0f, spring(dampingRatio = Spring.DampingRatioMediumBouncy))
                                 }
-                            },
-                            onLongPress = { haptic.performHapticFeedback(HapticFeedbackType.LongPress) }
+                            }
                         )
                     }
                     .pointerInput(Unit) {
@@ -185,13 +196,13 @@ fun MusicPage(
                         // Metadata Overlay Scrim
                         Box(
                             modifier = Modifier.fillMaxSize().background(
-                                Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(0.7f)), startY = 300f)
+                                Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(0.75f)), startY = 200f)
                             )
                         )
                         
-                        // Metadata Text Overlay (Strict Mockup Alignment)
+                        // Metadata Text Overlay
                         Column(
-                            modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp),
+                            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp, start = 16.dp, end = 16.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
@@ -201,7 +212,7 @@ fun MusicPage(
                             )
                             Text(
                                 text = trackInfo.artist,
-                                fontSize = 13.sp, fontWeight = FontWeight.Medium, color = Color.White.copy(0.8f),
+                                fontSize = 13.sp, fontWeight = FontWeight.Medium, color = Color.White.copy(0.75f),
                                 maxLines = 1, textAlign = TextAlign.Center, modifier = Modifier.basicMarquee()
                             )
                         }
@@ -209,124 +220,89 @@ fun MusicPage(
                 }
             }
 
-            // 2. Playback Control Row (Strict Component Placement)
+            // 2. Volume Bar (Mockup Style)
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = { MediaController.dispatchMediaKey(activity, KeyEvent.KEYCODE_MEDIA_PREVIOUS) }) {
-                    Icon(Icons.Default.SkipPrevious, null, tint = contentColor, modifier = Modifier.size(32.dp))
-                }
+                Icon(Icons.AutoMirrored.Filled.VolumeUp, null, tint = contentColor.copy(alpha = 0.5f), modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(12.dp))
+                Slider(
+                    value = coercedVolume,
+                    onValueChange = { newValue ->
+                        currentVolume = newValue.roundToInt()
+                        if (activeController != null && playbackInfo != null) {
+                            try { activeController.setVolumeTo(currentVolume, 0) } catch (_: Exception) {}
+                        } else {
+                            audioManager.setStreamVolume(android.media.AudioManager.STREAM_MUSIC, currentVolume, 0)
+                        }
+                    },
+                    valueRange = 0f..maxVolFloat,
+                    modifier = Modifier.weight(1f).height(32.dp),
+                    colors = SliderDefaults.colors(
+                        thumbColor = Color.White,
+                        activeTrackColor = themeColor,
+                        inactiveTrackColor = Color.White.copy(alpha = 0.15f)
+                    ),
+                    thumb = { Box(modifier = Modifier.size(10.dp).background(Color.White, CircleShape)) }
+                )
+            }
 
-                // Glowy Center Play Button
+            // 3. Thick Pill Seek Bar (Mockup Style)
+            val progressFrac = if (trackInfo.durationMs > 0) realProgressMs.toFloat() / trackInfo.durationMs else 0.45f
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.95f)
+                    .height(36.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.12f))
+                    .clickable { /* Future seek interaction */ },
+                contentAlignment = Alignment.CenterStart
+            ) {
                 Box(
                     modifier = Modifier
-                        .size(72.dp)
-                        .background(themeColor.copy(alpha = 0.2f), CircleShape)
-                        .shadow(16.dp, CircleShape, spotColor = themeColor, ambientColor = themeColor)
-                        .clickable { MediaController.dispatchMediaKey(activity, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE) },
-                    contentAlignment = Alignment.Center
+                        .fillMaxWidth(progressFrac)
+                        .fillMaxHeight()
+                        .background(Brush.horizontalGradient(listOf(themeColor, themeColor.copy(alpha = 0.8f))))
+                )
+            }
+
+            // 4. Timestamps & Controls (Below Progress)
+            Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Box(modifier = Modifier.size(54.dp).background(themeColor, CircleShape), contentAlignment = Alignment.Center) {
-                        Icon(if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow, null, tint = Color.White, modifier = Modifier.size(32.dp))
-                    }
+                    val formatMs: (Long) -> String = { ms -> String.format(Locale.getDefault(), "%d:%02d", ms/60000, (ms%60000)/1000) }
+                    Text(formatMs(realProgressMs), fontSize = 12.sp, color = contentColor.copy(alpha = 0.9f), fontWeight = FontWeight.Bold, fontFamily = fontFamily)
+                    Text(formatMs(trackInfo.durationMs), fontSize = 12.sp, color = contentColor.copy(alpha = 0.9f), fontWeight = FontWeight.Bold, fontFamily = fontFamily)
                 }
 
-                IconButton(onClick = { MediaController.dispatchMediaKey(activity, KeyEvent.KEYCODE_MEDIA_NEXT) }) {
-                    Icon(Icons.Default.SkipNext, null, tint = contentColor, modifier = Modifier.size(32.dp))
-                }
-            }
-
-            // 3. Custom Seek Bar (Strict Visual Reference)
-            Column(modifier = Modifier.fillMaxWidth(0.92f)) {
-                val progressFrac = if (trackInfo.durationMs > 0) realProgressMs.toFloat() / trackInfo.durationMs else 0f
-                
-                Box(modifier = Modifier.fillMaxWidth().height(48.dp), contentAlignment = Alignment.Center) {
-                    // Track
-                    Canvas(modifier = Modifier.fillMaxWidth().height(4.dp)) {
-                        drawRoundRect(Color.White.copy(0.15f), size = size, cornerRadius = CornerRadius(2.dp.toPx()))
-                        drawRoundRect(themeColor, size = size.copy(width = size.width * progressFrac), cornerRadius = CornerRadius(2.dp.toPx()))
-                    }
-                    
-                    // Spherical Thumb Overlay
-                    Slider(
-                        value = progressFrac,
-                        onValueChange = { 
-                            val target = (it * trackInfo.durationMs).toLong()
-                            MyNotificationListenerService.activeController?.transportControls?.seekTo(target)
-                        },
-                        thumb = {
-                            Box(
-                                modifier = Modifier
-                                    .size(24.dp)
-                                    .background(
-                                        Brush.radialGradient(listOf(Color.White, themeColor, themeColor.copy(0.8f))),
-                                        CircleShape
-                                    )
-                                    .shadow(6.dp, CircleShape)
-                            )
-                        },
-                        colors = SliderDefaults.colors(thumbColor = Color.Transparent, activeTrackColor = Color.Transparent, inactiveTrackColor = Color.Transparent)
-                    )
-                }
-
-                Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                    val formatMs: (Long) -> String = { ms -> String.format(Locale.getDefault(), "%02d:%02d", ms/60000, (ms%60000)/1000) }
-                    Text(formatMs(realProgressMs), fontSize = 11.sp, color = contentColor.copy(0.6f), fontFamily = fontFamily, style = TextStyle(shadow = Shadow(shadowColor, Offset(1f, 1f), 2f)))
-                    Text(formatMs(trackInfo.durationMs), fontSize = 11.sp, color = contentColor.copy(0.6f), fontFamily = fontFamily, style = TextStyle(shadow = Shadow(shadowColor, Offset(1f, 1f), 2f)))
-                }
-            }
-
-            // 4. Session & Waveform Card (Strict Bottom Placement)
-            Card(
-                modifier = Modifier.fillMaxWidth(0.98f).height(120.dp),
-                shape = RoundedCornerShape(32.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.Black.copy(alpha = 0.45f))
-            ) {
-                Column(
-                    modifier = Modifier.fillMaxSize().padding(12.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.SpaceBetween
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        val sessionTitle = remember(trackInfo.packageName) {
-                            try {
-                                activity.packageManager.getApplicationLabel(activity.packageManager.getApplicationInfo(trackInfo.packageName, 0)).toString()
-                            } catch (_: Exception) {
-                                "Media Session"
-                            }
-                        }
-                        Text(sessionTitle, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White, fontFamily = fontFamily)
-                        Text("• Active Streaming Session", fontSize = 12.sp, color = Color.White.copy(0.6f), fontFamily = fontFamily)
+                    IconButton(onClick = { MediaController.dispatchMediaKey(activity, KeyEvent.KEYCODE_MEDIA_PREVIOUS) }) {
+                        Icon(Icons.Default.SkipPrevious, null, tint = contentColor, modifier = Modifier.size(36.dp))
                     }
-                    
-                    // Animated Waveform
-                    WaveformVisualizer(themeColor, isPlaying)
-                }
-            }
-        }
-    }
-}
 
-@Composable
-fun WaveformVisualizer(color: Color, isPlaying: Boolean) {
-    val phaseTransition = rememberInfiniteTransition(label = "waveform")
-    val phase by phaseTransition.animateFloat(0f, 2f * PI.toFloat(), infiniteRepeatable(tween(1500, easing = LinearEasing)), label = "phase")
-    
-    val barCount = 40
-    val heights = remember { List(barCount) { 0.3f + Random.nextFloat() * 0.6f } }
-    
-    Box(Modifier.fillMaxWidth().height(40.dp), contentAlignment = Alignment.Center) {
-        Canvas(Modifier.fillMaxSize()) {
-            val barWidth = (size.width / barCount) * 0.6f
-            val spacing = (size.width / barCount) * 0.4f
-            for (i in 0 until barCount) {
-                val animMod = if (isPlaying) cos(i * 0.5f + phase) * 0.2f else 0f
-                val h = (heights[i] + animMod).coerceIn(0.1f, 1.0f) * size.height
-                val x = i * (barWidth + spacing)
-                val y = (size.height - h) / 2f
-                drawRoundRect(color, Offset(x, y), Size(barWidth, h), CornerRadius(barWidth/2))
+                    // Solid Rounded Play Button
+                    Box(
+                        modifier = Modifier
+                            .size(68.dp)
+                            .background(themeColor, CircleShape)
+                            .shadow(16.dp, CircleShape, spotColor = themeColor)
+                            .clickable { MediaController.dispatchMediaKey(activity, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE) },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow, null, tint = Color.White, modifier = Modifier.size(36.dp))
+                    }
+
+                    IconButton(onClick = { MediaController.dispatchMediaKey(activity, KeyEvent.KEYCODE_MEDIA_NEXT) }) {
+                        Icon(Icons.Default.SkipNext, null, tint = contentColor, modifier = Modifier.size(36.dp))
+                    }
+                }
             }
         }
     }

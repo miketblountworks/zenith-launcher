@@ -87,6 +87,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.BlendMode
@@ -184,6 +185,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
     // If dark, use light text. This makes the launcher text react to the background.
     val isLightBackground = wallpaperLuminance > 0.52f
     val adaptiveTextColor = if (isLightBackground) Color(0xFF1C1C1E) else Color.White
+    val adaptiveShadowColor = if (isLightBackground) Color.White.copy(alpha = 0.4f) else Color.Black.copy(alpha = 0.6f)
     val adaptiveTextSecondary = if (isLightBackground) Color(0xFF3A3A3C) else Color.White.copy(alpha = 0.72f)
     val adaptiveTextMuted = if (isLightBackground) Color(0xFF5C5C5E) else Color.White.copy(alpha = 0.55f)
     val adaptiveIconTint = adaptiveTextColor
@@ -801,14 +803,15 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                     Box(
                                                         modifier = Modifier
                                                             .clip(RoundedCornerShape(16.dp))
-                                                            .background(
-                                                                if (isAllSelected) currentThemeColor.copy(alpha = 0.25f)
-                                                                else adaptiveGlassBg
+                                                            .then(
+                                                                if (isAllSelected) Modifier
+                                                                    .background(Brush.horizontalGradient(listOf(Color(0xFF8E2DE2), Color(0xFF4A00E0))))
+                                                                    .shadow(12.dp, RoundedCornerShape(16.dp), spotColor = Color(0xFF8E2DE2))
+                                                                else Modifier.background(adaptiveGlassBg)
                                                             )
                                                             .border(
-                                                                1.dp,
-                                                                if (isAllSelected) currentThemeColor.copy(alpha = 0.5f)
-                                                                else adaptiveGlassBorder,
+                                                                if (isAllSelected) 0.dp else 1.dp,
+                                                                if (isAllSelected) Color.Transparent else adaptiveGlassBorder,
                                                                 RoundedCornerShape(16.dp)
                                                             )
                                                             .clickable { selectedCategoryFilter = "All" }
@@ -820,18 +823,18 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                             Icon(
                                                                 Icons.Default.Menu, 
                                                                 contentDescription = null, 
-                                                                tint = if (isAllSelected) currentThemeColor else adaptiveIconTint, 
+                                                                tint = if (isAllSelected) Color.White else adaptiveIconTint, 
                                                                 modifier = Modifier.size(16.dp).padding(end = 6.dp)
                                                             )
                                                             Text(
                                                                 text = "All Apps",
                                                                 fontSize = 12.sp,
                                                                 fontFamily = currentFontFamily,
-                                                                color = if (isAllSelected) currentThemeColor else adaptiveTextColor,
+                                                                color = if (isAllSelected) Color.White else adaptiveTextColor,
                                                                 fontWeight = if (isAllSelected) FontWeight.Bold else FontWeight.Medium,
                                                                 style = TextStyle(
                                                                     shadow = Shadow(
-                                                                        color = Color.Black.copy(alpha = 0.6f),
+                                                                        color = adaptiveShadowColor,
                                                                         offset = Offset(1f, 1f),
                                                                         blurRadius = 3f
                                                                     )
@@ -854,14 +857,15 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                         Box(
                                                             modifier = Modifier
                                                                 .clip(RoundedCornerShape(16.dp))
-                                                                .background(
-                                                                    if (isSelected) currentThemeColor.copy(alpha = 0.25f)
-                                                                    else adaptiveGlassBg
+                                                                .then(
+                                                                    if (isSelected) Modifier
+                                                                        .background(Brush.horizontalGradient(listOf(Color(0xFF8E2DE2), Color(0xFF4A00E0))))
+                                                                        .shadow(12.dp, RoundedCornerShape(16.dp), spotColor = Color(0xFF8E2DE2))
+                                                                    else Modifier.background(adaptiveGlassBg)
                                                                 )
                                                                 .border(
-                                                                    1.dp,
-                                                                    if (isSelected) currentThemeColor.copy(alpha = 0.5f)
-                                                                    else adaptiveGlassBorder,
+                                                                    if (isSelected) 0.dp else 1.dp,
+                                                                    if (isSelected) Color.Transparent else adaptiveGlassBorder,
                                                                     RoundedCornerShape(16.dp)
                                                                 )
                                                                 .clickable { 
@@ -875,18 +879,18 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                                 Icon(
                                                                     iconVector, 
                                                                     contentDescription = null, 
-                                                                    tint = if (isSelected) currentThemeColor else adaptiveIconTint, 
+                                                                    tint = if (isSelected) Color.White else adaptiveIconTint, 
                                                                     modifier = Modifier.size(16.dp).padding(end = 6.dp)
                                                                 )
                                                                 Text(
                                                                     text = "$textLabel (${appsList.size})",
                                                                     fontSize = 12.sp,
                                                                     fontFamily = currentFontFamily,
-                                                                    color = if (isSelected) currentThemeColor else adaptiveTextColor,
+                                                                    color = if (isSelected) Color.White else adaptiveTextColor,
                                                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                                                     style = TextStyle(
                                                                         shadow = Shadow(
-                                                                            color = Color.Black.copy(alpha = 0.6f),
+                                                                            color = adaptiveShadowColor,
                                                                             offset = Offset(1f, 1f),
                                                                             blurRadius = 3f
                                                                         )
