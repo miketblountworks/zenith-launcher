@@ -263,7 +263,8 @@ fun GroupedNotificationStack(
     activity: MainActivity,
     onLongPressApp: ((AppInfo) -> Unit)? = null,
     onNotificationClick: (appName: String, text: String, defaultPkg: String) -> Unit,
-    onExpandedClick: (String) -> Unit
+    onExpandedClick: (String) -> Unit,
+    onExpand: (AppNotification) -> Unit = {}
 ) {
     val haptic = LocalHapticFeedback.current
     var currentList by remember(notifications) { mutableStateOf(notifications) }
@@ -342,6 +343,7 @@ fun GroupedNotificationStack(
                             onExpandedClick(pkg)
                         }
                     },
+                    onExpand = { onExpand(item) },
                     onLongPress = {
                         if (isTopCard) {
                             val resolvedAppInfo = try {
@@ -398,7 +400,7 @@ fun SwipeToDismissNotification(
     onNotificationClick: () -> Unit,
     modifier: Modifier = Modifier,
     onLongPress: (() -> Unit)? = null,
-    contentColor: Color = Color.White
+    onExpand: () -> Unit = {}
 ) {
     NotificationItemCard(
         item = item,
@@ -408,7 +410,8 @@ fun SwipeToDismissNotification(
         onDismiss = onDismiss,
         onNotificationClick = onNotificationClick,
         modifier = modifier,
-        onLongPress = onLongPress
+        onLongPress = onLongPress,
+        onExpand = onExpand
     )
 }
 
@@ -421,7 +424,8 @@ fun NotificationItemCard(
     onDismiss: (() -> Unit)?,
     onNotificationClick: () -> Unit,
     modifier: Modifier = Modifier,
-    onLongPress: (() -> Unit)? = null
+    onLongPress: (() -> Unit)? = null,
+    onExpand: () -> Unit = {}
 ) {
     val haptic = LocalHapticFeedback.current
     val density = LocalDensity.current
@@ -439,6 +443,7 @@ fun NotificationItemCard(
 
     var activeReplyActionIndex by remember { mutableIntStateOf(-1) }
     var replyText by remember { mutableStateOf("") }
+    var hasTextOverflow by remember { mutableStateOf(false) }
 
     val actionTextColor = Color(0xFF9C27B0)
 
@@ -604,7 +609,11 @@ fun NotificationItemCard(
                 Spacer(modifier = Modifier.width(16.dp))
                 
                 // Text content area
-                Column(modifier = Modifier.weight(1f)) {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable(enabled = hasTextOverflow) { onExpand() }
+                ) {
                     Text(
                         text = item.appName,
                         fontSize = 16.sp,
@@ -622,7 +631,10 @@ fun NotificationItemCard(
                         fontFamily = fontFamily,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        lineHeight = 16.sp
+                        lineHeight = 16.sp,
+                        onTextLayout = { textLayoutResult ->
+                            if (textLayoutResult.hasVisualOverflow) hasTextOverflow = true
+                        }
                     )
                 }
             }

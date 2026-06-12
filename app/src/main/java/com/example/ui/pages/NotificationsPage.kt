@@ -5,12 +5,15 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,10 +27,13 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Notifications
@@ -61,6 +67,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.toDrawable
+import coil.compose.rememberAsyncImagePainter
 import com.example.MainActivity
 import com.example.model.AppInfo
 import com.example.model.AppNotification
@@ -91,6 +98,7 @@ fun NotificationsPage(
     }
 
     val expandedGroups = remember { mutableStateMapOf<String, Boolean>() }
+    var expandedNotification by remember { mutableStateOf<AppNotification?>(null) }
 
     Box(
         modifier = modifier
@@ -248,7 +256,7 @@ fun NotificationsPage(
                                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                         onNotificationClick(item.appName, item.text, item.pkg)
                                     },
-                                    contentColor = MaterialTheme.colorScheme.onSurface,
+                                    onExpand = { expandedNotification = item },
                                     onLongPress = {
                                         val resolvedAppInfo = try {
                                             val label = activity.packageManager.getApplicationLabel(activity.packageManager.getApplicationInfo(item.pkg, 0)).toString()
@@ -279,7 +287,8 @@ fun NotificationsPage(
                                             activity = activity,
                                             onLongPressApp = onLongPressApp,
                                             onNotificationClick = onNotificationClick,
-                                            onExpandedClick = { expandedGroups[pkg] = true }
+                                            onExpandedClick = { expandedGroups[pkg] = true },
+                                            onExpand = { expandedNotification = it }
                                         )
                                     } else {
                                         Row(
@@ -339,7 +348,7 @@ fun NotificationsPage(
                                                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                                             onNotificationClick(item.appName, item.text, item.pkg)
                                                         },
-                                                        contentColor = MaterialTheme.colorScheme.onSurface,
+                                                        onExpand = { expandedNotification = item },
                                                         onLongPress = {
                                                             val resolvedAppInfo = try {
                                                                 val label = activity.packageManager.getApplicationLabel(activity.packageManager.getApplicationInfo(item.pkg, 0)).toString()
@@ -397,6 +406,114 @@ fun NotificationsPage(
                 )
                 Box(modifier = Modifier.size(36.dp).background(Color(0xFF9C27B0), CircleShape), contentAlignment = Alignment.Center) {
                     Text(text = "MT", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+
+        // Expanded Notification Popup Overlay
+        AnimatedVisibility(
+            visible = expandedNotification != null,
+            enter = fadeIn() + slideInVertically { it / 2 },
+            exit = fadeOut() + slideOutVertically { it / 2 }
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.6f))
+                    .pointerInput(Unit) {
+                        detectTapGestures(onTap = { expandedNotification = null })
+                    },
+                contentAlignment = Alignment.BottomCenter
+            ) {
+                expandedNotification?.let { item ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 100.dp, start = 12.dp, end = 12.dp)
+                            .wrapContentHeight(),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+                        shape = RoundedCornerShape(28.dp),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                val appIcon = try {
+                                    activity.packageManager.getApplicationIcon(item.pkg)
+                                } catch (_: Exception) {
+                                    null
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (appIcon != null) {
+                                        androidx.compose.foundation.Image(
+                                            painter = rememberAsyncImagePainter(appIcon),
+                                            contentDescription = null,
+                                            modifier = Modifier.fillMaxSize().padding(8.dp)
+                                        )
+                                    } else {
+                                        Text(text = item.appName.firstOrNull()?.uppercase() ?: "", fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                                    }
+                                }
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Text(
+                                    text = item.appName,
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontFamily = fontFamily
+                                )
+                            }
+
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .verticalScroll(rememberScrollState())
+                            ) {
+                                Text(
+                                    text = item.text,
+                                    fontSize = 16.sp,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontFamily = fontFamily,
+                                    lineHeight = 22.sp
+                                )
+                            }
+                            
+                            // Actions in Expanded View
+                            val actions = item.sbn?.notification?.actions
+                            if (actions != null && actions.isNotEmpty()) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                                    horizontalArrangement = Arrangement.spacedBy(24.dp)
+                                ) {
+                                    actions.forEach { action ->
+                                        Text(
+                                            text = action.title?.toString() ?: "Action",
+                                            fontSize = 15.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF9C27B0),
+                                            fontFamily = fontFamily,
+                                            modifier = Modifier.clickable {
+                                                try {
+                                                    action.actionIntent?.send(activity, 0, null)
+                                                    expandedNotification = null
+                                                } catch (_: Exception) {}
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
