@@ -476,133 +476,56 @@ fun NotificationsPage(
                         enableDismissFromStartToEnd = false,
                         backgroundContent = { /* No background needed for expanded popup */ },
                         content = {
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(bottom = 100.dp, start = 12.dp, end = 12.dp)
-                                    .wrapContentHeight()
-                                    .shadow(elevation = 16.dp, shape = RoundedCornerShape(28.dp))
-                                    .clickable {
-                                        val sbn = item.sbn
-                                        val contentIntent = sbn?.notification?.contentIntent
-                                        
-                                        try {
-                                            if (contentIntent != null) {
-                                                val options = if (Build.VERSION.SDK_INT >= 34) {
-                                                    ActivityOptions.makeBasic().apply {
-                                                        setPendingIntentBackgroundActivityStartMode(ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED)
-                                                    }
-                                                } else {
-                                                    ActivityOptions.makeBasic()
-                                                }
-                                                contentIntent.send(context, 0, null, null, null, null, options.toBundle())
-                                                
-                                                val isAutoCancel = (sbn.notification.flags and Notification.FLAG_AUTO_CANCEL) != 0
-                                                if (isAutoCancel) {
-                                                    MyNotificationListenerService.instance?.cancelNotification(item.key)
-                                                    val currentList = activity.notificationList.value.toMutableList()
-                                                    currentList.remove(item)
-                                                    activity.notificationList.value = currentList
+                            SwipeToDismissNotification(
+                                item = item,
+                                themeColor = themeColor,
+                                fontFamily = fontFamily,
+                                activity = activity,
+                                onDismiss = { expandedNotification = null },
+                                onNotificationClick = {
+                                    val sbn = item.sbn
+                                    val contentIntent = sbn?.notification?.contentIntent
+                                    
+                                    try {
+                                        if (contentIntent != null) {
+                                            val options = if (Build.VERSION.SDK_INT >= 34) {
+                                                ActivityOptions.makeBasic().apply {
+                                                    setPendingIntentBackgroundActivityStartMode(ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED)
                                                 }
                                             } else {
-                                                val fallbackIntent = context.packageManager.getLaunchIntentForPackage(item.pkg)
-                                                if (fallbackIntent != null) {
-                                                    context.startActivity(fallbackIntent)
-                                                }
+                                                ActivityOptions.makeBasic()
                                             }
-                                        } catch (e: android.app.PendingIntent.CanceledException) {
+                                            contentIntent.send(context, 0, null, null, null, null, options.toBundle())
+                                            
+                                            val isAutoCancel = (sbn.notification.flags and Notification.FLAG_AUTO_CANCEL) != 0
+                                            if (isAutoCancel) {
+                                                MyNotificationListenerService.instance?.cancelNotification(item.key)
+                                                val currentList = activity.notificationList.value.toMutableList()
+                                                currentList.remove(item)
+                                                activity.notificationList.value = currentList
+                                            }
+                                        } else {
                                             val fallbackIntent = context.packageManager.getLaunchIntentForPackage(item.pkg)
                                             if (fallbackIntent != null) {
                                                 context.startActivity(fallbackIntent)
                                             }
-                                        } catch (e: Exception) {
-                                            e.printStackTrace()
                                         }
-                                        expandedNotification = null
-                                    },
-                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-                                shape = RoundedCornerShape(28.dp),
-                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
-                            ) {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(24.dp),
-                                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                                ) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        val appIcon = try {
-                                            activity.packageManager.getApplicationIcon(item.pkg)
-                                        } catch (_: Exception) {
-                                            null
+                                    } catch (e: android.app.PendingIntent.CanceledException) {
+                                        val fallbackIntent = context.packageManager.getLaunchIntentForPackage(item.pkg)
+                                        if (fallbackIntent != null) {
+                                            context.startActivity(fallbackIntent)
                                         }
-                                        Box(
-                                            modifier = Modifier
-                                                .size(48.dp)
-                                                .clip(CircleShape)
-                                                .background(MaterialTheme.colorScheme.surfaceVariant),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            if (appIcon != null) {
-                                                androidx.compose.foundation.Image(
-                                                    painter = rememberAsyncImagePainter(appIcon),
-                                                    contentDescription = null,
-                                                    modifier = Modifier.fillMaxSize().padding(8.dp)
-                                                )
-                                            } else {
-                                                Text(text = item.appName.firstOrNull()?.uppercase() ?: "", fontWeight = FontWeight.Bold, fontSize = 20.sp)
-                                            }
-                                        }
-                                        Spacer(modifier = Modifier.width(16.dp))
-                                        Text(
-                                            text = item.appName,
-                                            fontSize = 18.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.onSurface,
-                                            fontFamily = fontFamily
-                                        )
+                                    } catch (e: Exception) {
+                                        e.printStackTrace()
                                     }
-
-                                    Column(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .verticalScroll(rememberScrollState())
-                                    ) {
-                                        Text(
-                                            text = item.text,
-                                            fontSize = 16.sp,
-                                            color = MaterialTheme.colorScheme.onSurface,
-                                            fontFamily = fontFamily,
-                                            lineHeight = 22.sp
-                                        )
-                                    }
-                                    
-                                    // Actions in Expanded View
-                                    val actions = item.sbn?.notification?.actions
-                                    if (actions != null && actions.isNotEmpty()) {
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                                            horizontalArrangement = Arrangement.spacedBy(24.dp)
-                                        ) {
-                                            actions.forEach { action ->
-                                                Text(
-                                                    text = action.title?.toString() ?: "Action",
-                                                    fontSize = 15.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = Color(0xFF9C27B0),
-                                                    fontFamily = fontFamily,
-                                                    modifier = Modifier.clickable {
-                                                        try {
-                                                            action.actionIntent?.send(activity, 0, null)
-                                                            expandedNotification = null
-                                                        } catch (_: Exception) {}
-                                                    }
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+                                    expandedNotification = null
+                                },
+                                onActionClicked = { expandedNotification = null },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 100.dp, start = 12.dp, end = 12.dp)
+                                    .shadow(elevation = 16.dp, shape = RoundedCornerShape(28.dp))
+                            )
                         }
                     )
                 }

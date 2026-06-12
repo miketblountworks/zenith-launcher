@@ -264,7 +264,8 @@ fun GroupedNotificationStack(
     onLongPressApp: ((AppInfo) -> Unit)? = null,
     onNotificationClick: (appName: String, text: String, defaultPkg: String) -> Unit,
     onExpandedClick: (String) -> Unit,
-    onExpand: (AppNotification) -> Unit = {}
+    onExpand: (AppNotification) -> Unit = {},
+    onActionClicked: () -> Unit = {}
 ) {
     val haptic = LocalHapticFeedback.current
     var currentList by remember(notifications) { mutableStateOf(notifications) }
@@ -344,6 +345,7 @@ fun GroupedNotificationStack(
                         }
                     },
                     onExpand = { onExpand(item) },
+                    onActionClicked = onActionClicked,
                     onLongPress = {
                         if (isTopCard) {
                             val resolvedAppInfo = try {
@@ -400,7 +402,8 @@ fun SwipeToDismissNotification(
     onNotificationClick: () -> Unit,
     modifier: Modifier = Modifier,
     onLongPress: (() -> Unit)? = null,
-    onExpand: () -> Unit = {}
+    onExpand: () -> Unit = {},
+    onActionClicked: () -> Unit = {}
 ) {
     NotificationItemCard(
         item = item,
@@ -411,7 +414,8 @@ fun SwipeToDismissNotification(
         onNotificationClick = onNotificationClick,
         modifier = modifier,
         onLongPress = onLongPress,
-        onExpand = onExpand
+        onExpand = onExpand,
+        onActionClicked = onActionClicked
     )
 }
 
@@ -425,7 +429,8 @@ fun NotificationItemCard(
     onNotificationClick: () -> Unit,
     modifier: Modifier = Modifier,
     onLongPress: (() -> Unit)? = null,
-    onExpand: () -> Unit = {}
+    onExpand: () -> Unit = {},
+    onActionClicked: () -> Unit = {}
 ) {
     val haptic = LocalHapticFeedback.current
     val density = LocalDensity.current
@@ -670,7 +675,10 @@ fun NotificationItemCard(
                                         activeReplyActionIndex = if (activeReplyActionIndex == index) -1 else index
                                     } else {
                                         try {
-                                            action.actionIntent?.send(context, 0, null)
+                                            action.actionIntent?.send()
+                                            onActionClicked()
+                                        } catch (e: android.app.PendingIntent.CanceledException) {
+                                            // ignore
                                         } catch (_: Exception) {}
                                     }
                                 }
@@ -747,6 +755,7 @@ fun NotificationItemCard(
                                         action.actionIntent?.send(context, 0, fillInIntent)
                                         replyText = ""
                                         activeReplyActionIndex = -1
+                                        onActionClicked()
                                         onDismiss?.invoke()
                                     } catch (e: Exception) {
                                         e.printStackTrace()
