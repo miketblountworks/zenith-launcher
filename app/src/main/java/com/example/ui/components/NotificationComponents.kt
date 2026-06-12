@@ -341,7 +341,7 @@ fun GroupedNotificationStack(
                     onNotificationClick = {
                         if (isTopCard) {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            onNotificationClick(item.appName, item.text, item.pkg)
+                            onExpandedClick(pkg)
                         }
                     },
                     onExpand = { onExpand(item) },
@@ -403,7 +403,8 @@ fun SwipeToDismissNotification(
     modifier: Modifier = Modifier,
     onLongPress: (() -> Unit)? = null,
     onExpand: () -> Unit = {},
-    onActionClicked: () -> Unit = {}
+    onActionClicked: () -> Unit = {},
+    isPopupMode: Boolean = false
 ) {
     NotificationItemCard(
         item = item,
@@ -415,7 +416,8 @@ fun SwipeToDismissNotification(
         modifier = modifier,
         onLongPress = onLongPress,
         onExpand = onExpand,
-        onActionClicked = onActionClicked
+        onActionClicked = onActionClicked,
+        isPopupMode = isPopupMode
     )
 }
 
@@ -430,7 +432,8 @@ fun NotificationItemCard(
     modifier: Modifier = Modifier,
     onLongPress: (() -> Unit)? = null,
     onExpand: () -> Unit = {},
-    onActionClicked: () -> Unit = {}
+    onActionClicked: () -> Unit = {},
+    isPopupMode: Boolean = false
 ) {
     val haptic = LocalHapticFeedback.current
     val density = LocalDensity.current
@@ -576,7 +579,8 @@ fun NotificationItemCard(
                 Column(
                     modifier = Modifier
                         .weight(1f)
-                        .clickable(enabled = hasTextOverflow) { onExpand() }
+                        .clickable(enabled = !isPopupMode && hasTextOverflow) { onExpand() }
+                        .then(if (isPopupMode) Modifier.verticalScroll(rememberScrollState()) else Modifier)
                 ) {
                     Text(
                         text = item.appName,
@@ -584,8 +588,8 @@ fun NotificationItemCard(
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
                         fontFamily = fontFamily,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        maxLines = if (isPopupMode) Int.MAX_VALUE else 1,
+                        overflow = if (isPopupMode) TextOverflow.Clip else TextOverflow.Ellipsis
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
@@ -593,8 +597,8 @@ fun NotificationItemCard(
                         fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontFamily = fontFamily,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
+                        maxLines = if (isPopupMode) Int.MAX_VALUE else 1,
+                        overflow = if (isPopupMode) TextOverflow.Clip else TextOverflow.Ellipsis,
                         lineHeight = 16.sp,
                         onTextLayout = { textLayoutResult ->
                             if (textLayoutResult.hasVisualOverflow) hasTextOverflow = true

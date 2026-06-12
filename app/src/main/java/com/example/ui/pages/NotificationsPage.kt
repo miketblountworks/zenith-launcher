@@ -8,6 +8,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -64,6 +65,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.shadow
@@ -118,6 +120,12 @@ fun NotificationsPage(
         cachedNotification = expandedNotification
     }
 
+    val blurRadius by animateDpAsState(
+        targetValue = if (expandedNotification != null) 16.dp else 0.dp,
+        animationSpec = tween(300),
+        label = "backgroundBlur"
+    )
+
     Box(
         modifier = modifier.fillMaxSize()
     ) {
@@ -126,6 +134,7 @@ fun NotificationsPage(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 8.dp, vertical = 16.dp)
+                .blur(blurRadius)
         ) {
             Column(
                 modifier = Modifier
@@ -485,6 +494,7 @@ fun NotificationsPage(
                                     expandedNotification = null
                                 },
                                 onActionClicked = { expandedNotification = null },
+                                isPopupMode = true,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 100.dp, start = 12.dp, end = 12.dp)
