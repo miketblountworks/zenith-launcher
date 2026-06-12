@@ -42,7 +42,10 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -427,95 +430,120 @@ fun NotificationsPage(
                 contentAlignment = Alignment.BottomCenter
             ) {
                 expandedNotification?.let { item ->
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 100.dp, start = 12.dp, end = 12.dp)
-                            .wrapContentHeight()
-                            .shadow(elevation = 16.dp, shape = RoundedCornerShape(28.dp)),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-                        shape = RoundedCornerShape(28.dp),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(24.dp),
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                val appIcon = try {
-                                    activity.packageManager.getApplicationIcon(item.pkg)
-                                } catch (_: Exception) {
-                                    null
-                                }
-                                Box(
-                                    modifier = Modifier
-                                        .size(48.dp)
-                                        .clip(CircleShape)
-                                        .background(MaterialTheme.colorScheme.surfaceVariant),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    if (appIcon != null) {
-                                        androidx.compose.foundation.Image(
-                                            painter = rememberAsyncImagePainter(appIcon),
-                                            contentDescription = null,
-                                            modifier = Modifier.fillMaxSize().padding(8.dp)
-                                        )
-                                    } else {
-                                        Text(text = item.appName.firstOrNull()?.uppercase() ?: "", fontWeight = FontWeight.Bold, fontSize = 20.sp)
-                                    }
-                                }
-                                Spacer(modifier = Modifier.width(16.dp))
-                                Text(
-                                    text = item.appName,
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    fontFamily = fontFamily
-                                )
+                    val dismissState = rememberSwipeToDismissBoxState(
+                        confirmValueChange = {
+                            if (it == SwipeToDismissBoxValue.EndToStart) {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                try {
+                                    MyNotificationListenerService.instance?.cancelNotification(item.key)
+                                } catch (_: Exception) {}
+                                val currentList = activity.notificationList.value.toMutableList()
+                                currentList.remove(item)
+                                activity.notificationList.value = currentList
+                                expandedNotification = null
+                                true
+                            } else {
+                                false
                             }
+                        }
+                    )
 
-                            Column(
+                    SwipeToDismissBox(
+                        state = dismissState,
+                        enableDismissFromStartToEnd = false,
+                        backgroundContent = { /* No background needed for expanded popup */ },
+                        content = {
+                            Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .verticalScroll(rememberScrollState())
+                                    .padding(bottom = 100.dp, start = 12.dp, end = 12.dp)
+                                    .wrapContentHeight()
+                                    .shadow(elevation = 16.dp, shape = RoundedCornerShape(28.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+                                shape = RoundedCornerShape(28.dp),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
                             ) {
-                                Text(
-                                    text = item.text,
-                                    fontSize = 16.sp,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    fontFamily = fontFamily,
-                                    lineHeight = 22.sp
-                                )
-                            }
-                            
-                            // Actions in Expanded View
-                            val actions = item.sbn?.notification?.actions
-                            if (actions != null && actions.isNotEmpty()) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                                    horizontalArrangement = Arrangement.spacedBy(24.dp)
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(24.dp),
+                                    verticalArrangement = Arrangement.spacedBy(16.dp)
                                 ) {
-                                    actions.forEach { action ->
-                                        Text(
-                                            text = action.title?.toString() ?: "Action",
-                                            fontSize = 15.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color(0xFF9C27B0),
-                                            fontFamily = fontFamily,
-                                            modifier = Modifier.clickable {
-                                                try {
-                                                    action.actionIntent?.send(activity, 0, null)
-                                                    expandedNotification = null
-                                                } catch (_: Exception) {}
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        val appIcon = try {
+                                            activity.packageManager.getApplicationIcon(item.pkg)
+                                        } catch (_: Exception) {
+                                            null
+                                        }
+                                        Box(
+                                            modifier = Modifier
+                                                .size(48.dp)
+                                                .clip(CircleShape)
+                                                .background(MaterialTheme.colorScheme.surfaceVariant),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            if (appIcon != null) {
+                                                androidx.compose.foundation.Image(
+                                                    painter = rememberAsyncImagePainter(appIcon),
+                                                    contentDescription = null,
+                                                    modifier = Modifier.fillMaxSize().padding(8.dp)
+                                                )
+                                            } else {
+                                                Text(text = item.appName.firstOrNull()?.uppercase() ?: "", fontWeight = FontWeight.Bold, fontSize = 20.sp)
                                             }
+                                        }
+                                        Spacer(modifier = Modifier.width(16.dp))
+                                        Text(
+                                            text = item.appName,
+                                            fontSize = 18.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            fontFamily = fontFamily
                                         )
+                                    }
+
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .verticalScroll(rememberScrollState())
+                                    ) {
+                                        Text(
+                                            text = item.text,
+                                            fontSize = 16.sp,
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            fontFamily = fontFamily,
+                                            lineHeight = 22.sp
+                                        )
+                                    }
+                                    
+                                    // Actions in Expanded View
+                                    val actions = item.sbn?.notification?.actions
+                                    if (actions != null && actions.isNotEmpty()) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                                            horizontalArrangement = Arrangement.spacedBy(24.dp)
+                                        ) {
+                                            actions.forEach { action ->
+                                                Text(
+                                                    text = action.title?.toString() ?: "Action",
+                                                    fontSize = 15.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = Color(0xFF9C27B0),
+                                                    fontFamily = fontFamily,
+                                                    modifier = Modifier.clickable {
+                                                        try {
+                                                            action.actionIntent?.send(activity, 0, null)
+                                                            expandedNotification = null
+                                                        } catch (_: Exception) {}
+                                                    }
+                                                )
+                                            }
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
+                    )
                 }
             }
         }
