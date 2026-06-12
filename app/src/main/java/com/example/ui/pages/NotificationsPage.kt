@@ -1,5 +1,9 @@
 package com.example.ui.pages
 
+import android.app.ActivityOptions
+import android.app.Notification
+import android.content.Intent
+import android.os.Build
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -64,6 +68,7 @@ import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -93,6 +98,7 @@ fun NotificationsPage(
     contentColor: Color = Color.White
 ) {
     val haptic = LocalHapticFeedback.current
+    val context = LocalContext.current
     
     val activeNotifications = remember(notifications, allowedCategories) {
         notifications.filter {
@@ -458,7 +464,45 @@ fun NotificationsPage(
                                     .fillMaxWidth()
                                     .padding(bottom = 100.dp, start = 12.dp, end = 12.dp)
                                     .wrapContentHeight()
-                                    .shadow(elevation = 16.dp, shape = RoundedCornerShape(28.dp)),
+                                    .shadow(elevation = 16.dp, shape = RoundedCornerShape(28.dp))
+                                    .clickable {
+                                        val sbn = item.sbn
+                                        val contentIntent = sbn?.notification?.contentIntent
+                                        
+                                        try {
+                                            if (contentIntent != null) {
+                                                val options = if (Build.VERSION.SDK_INT >= 34) {
+                                                    ActivityOptions.makeBasic().apply {
+                                                        setPendingIntentBackgroundActivityStartMode(ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED)
+                                                    }
+                                                } else {
+                                                    ActivityOptions.makeBasic()
+                                                }
+                                                contentIntent.send(context, 0, null, null, null, null, options.toBundle())
+                                                
+                                                val isAutoCancel = (sbn.notification.flags and Notification.FLAG_AUTO_CANCEL) != 0
+                                                if (isAutoCancel) {
+                                                    MyNotificationListenerService.instance?.cancelNotification(item.key)
+                                                    val currentList = activity.notificationList.value.toMutableList()
+                                                    currentList.remove(item)
+                                                    activity.notificationList.value = currentList
+                                                }
+                                            } else {
+                                                val fallbackIntent = context.packageManager.getLaunchIntentForPackage(item.pkg)
+                                                if (fallbackIntent != null) {
+                                                    context.startActivity(fallbackIntent)
+                                                }
+                                            }
+                                        } catch (e: android.app.PendingIntent.CanceledException) {
+                                            val fallbackIntent = context.packageManager.getLaunchIntentForPackage(item.pkg)
+                                            if (fallbackIntent != null) {
+                                                context.startActivity(fallbackIntent)
+                                            }
+                                        } catch (e: Exception) {
+                                            e.printStackTrace()
+                                        }
+                                        expandedNotification = null
+                                    },
                                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
                                 shape = RoundedCornerShape(28.dp),
                                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
