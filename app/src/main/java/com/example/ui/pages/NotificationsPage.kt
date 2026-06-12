@@ -65,6 +65,7 @@ import com.example.MainActivity
 import com.example.model.AppInfo
 import com.example.model.AppNotification
 import com.example.service.MyNotificationListenerService
+import com.example.ui.components.GroupedNotificationStack
 import com.example.ui.components.SwipeToDismissNotification
 import com.example.utils.getNotificationCategory
 
@@ -271,108 +272,15 @@ fun NotificationsPage(
                                 val isExpanded = expandedGroups[pkg] == true
                                 Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                     if (!isExpanded) {
-                                        Box(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .pointerInput(pkg) {
-                                                    detectTapGestures(
-                                                        onLongPress = {
-                                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                                            val resolvedAppInfo = try {
-                                                                val label = activity.packageManager.getApplicationLabel(activity.packageManager.getApplicationInfo(pkg, 0)).toString()
-                                                                val icon = activity.packageManager.getApplicationIcon(pkg)
-                                                                AppInfo(label = label, packageName = pkg, icon = icon)
-                                                            } catch (_: Exception) {
-                                                                AppInfo(
-                                                                    label = groupList[0].appName,
-                                                                    packageName = pkg,
-                                                                    icon = try {
-                                                                        activity.packageManager.getApplicationIcon(pkg)
-                                                                    } catch (_: Exception) {
-                                                                        0.toDrawable()
-                                                                    }
-                                                                )
-                                                            }
-                                                            onLongPressApp?.invoke(resolvedAppInfo)
-                                                        },
-                                                        onTap = {
-                                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                                            expandedGroups[pkg] = true
-                                                        }
-                                                    )
-                                                }
-                                        ) {
-                                            // Visual Stack Effect
-                                            Card(
-                                                modifier = Modifier
-                                                    .fillMaxWidth(0.96f)
-                                                    .align(Alignment.BottomCenter)
-                                                    .offset(y = 8.dp)
-                                                    .graphicsLayer {
-                                                        scaleX = 0.95f
-                                                        scaleY = 0.95f
-                                                    },
-                                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-                                                shape = RoundedCornerShape(24.dp),
-                                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                                            ) {
-                                                Box(modifier = Modifier.fillMaxWidth().height(64.dp))
-                                            }
-
-                                            SwipeToDismissNotification(
-                                                item = groupList[0],
-                                                themeColor = themeColor,
-                                                fontFamily = fontFamily,
-                                                activity = activity,
-                                                onDismiss = {
-                                                    try {
-                                                        MyNotificationListenerService.instance?.cancelNotification(groupList[0].key)
-                                                    } catch (_: Exception) {}
-                                                    val currentList = activity.notificationList.value.toMutableList()
-                                                    currentList.remove(groupList[0])
-                                                    activity.notificationList.value = currentList
-                                                },
-                                                onNotificationClick = {
-                                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                                    expandedGroups[pkg] = true
-                                                },
-                                                contentColor = MaterialTheme.colorScheme.onSurface,
-                                                onLongPress = {
-                                                    val resolvedAppInfo = try {
-                                                        val label = activity.packageManager.getApplicationLabel(activity.packageManager.getApplicationInfo(pkg, 0)).toString()
-                                                        val icon = activity.packageManager.getApplicationIcon(pkg)
-                                                        AppInfo(label = label, packageName = pkg, icon = icon)
-                                                    } catch (_: Exception) {
-                                                        AppInfo(
-                                                            label = groupList[0].appName,
-                                                            packageName = pkg,
-                                                            icon = try {
-                                                                activity.packageManager.getApplicationIcon(pkg)
-                                                            } catch (_: Exception) {
-                                                                0.toDrawable()
-                                                            }
-                                                        )
-                                                    }
-                                                    onLongPressApp?.invoke(resolvedAppInfo)
-                                                }
-                                            )
-
-                                            Box(
-                                                modifier = Modifier
-                                                    .align(Alignment.TopEnd)
-                                                    .padding(top = 12.dp, end = 12.dp)
-                                                    .background(themeColor, shape = CircleShape)
-                                                    .padding(horizontal = 8.dp, vertical = 2.dp)
-                                            ) {
-                                                Text(
-                                                    text = "+${groupList.size - 1}",
-                                                    fontSize = 10.sp,
-                                                    color = Color.White,
-                                                    fontWeight = FontWeight.Bold,
-                                                    fontFamily = fontFamily
-                                                )
-                                            }
-                                        }
+                                        GroupedNotificationStack(
+                                            notifications = groupList,
+                                            themeColor = themeColor,
+                                            fontFamily = fontFamily,
+                                            activity = activity,
+                                            onLongPressApp = onLongPressApp,
+                                            onNotificationClick = onNotificationClick,
+                                            onExpandedClick = { expandedGroups[pkg] = true }
+                                        )
                                     } else {
                                         Row(
                                             modifier = Modifier

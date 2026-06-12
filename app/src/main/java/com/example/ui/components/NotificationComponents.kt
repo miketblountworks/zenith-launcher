@@ -5,6 +5,7 @@ import android.app.Notification
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -59,6 +60,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -70,8 +72,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.util.lerp
+import androidx.compose.ui.zIndex
 import coil.compose.rememberAsyncImagePainter
 import com.example.MainActivity
+import com.example.model.AppInfo
 import com.example.model.AppNotification
 import com.example.service.MyNotificationListenerService
 import com.example.utils.getNotificationCategory
@@ -251,6 +256,139 @@ fun NotificationSummaryWidget(
 }
 
 @Composable
+fun GroupedNotificationStack(
+    notifications: List<AppNotification>,
+    themeColor: Color,
+    fontFamily: FontFamily,
+    activity: MainActivity,
+    onLongPressApp: ((AppInfo) -> Unit)? = null,
+    onNotificationClick: (appName: String, text: String, defaultPkg: String) -> Unit,
+    onExpandedClick: (String) -> Unit
+) {
+    val haptic = LocalHapticFeedback.current
+    var currentList by remember(notifications) { mutableStateOf(notifications) }
+    val offsetX = remember { Animatable(0f) }
+    val scope = rememberCoroutineScope()
+    val pkg = notifications.firstOrNull()?.pkg ?: ""
+
+    Box(
+        modifier = Modifier.fillMaxWidth(),
+        contentAlignment = Alignment.Center
+    ) {
+        // Calculate progress based on top card swipe (0f to 1f)
+        val progress = (abs(offsetX.value) / 400f).coerceIn(0f, 1f)
+
+        // Render up to 3 notifications in a stacked deck (Back to Front)
+        currentList.take(3).withIndex().toList().reversed().forEach { (index, item) ->
+            val isTopCard = index == 0
+            
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .graphicsLayer {
+                        when (index) {
+                            0 -> {
+                                translationX = offsetX.value
+                            }
+                            1 -> {
+                                scaleX = lerp(0.9f, 1f, progress)
+                                scaleY = lerp(0.9f, 1f, progress)
+                                translationY = lerp(40f, 0f, progress)
+                                alpha = lerp(0.4f, 1f, progress)
+                            }
+                            else -> {
+                                scaleX = 0.8f
+                                scaleY = 0.8f
+                                translationY = 80f
+                                alpha = 0.0f
+                            }
+                        }
+                    }
+                    .zIndex(if (index == 0) 10f else if (index == 1) 5f else 1f)
+                    .then(
+                        if (isTopCard) {
+                            Modifier.pointerInput(currentList) {
+                                detectHorizontalDragGestures(
+                                    onDragEnd = {
+                                        scope.launch {
+                                            if (abs(offsetX.value) > 200f) {
+                                                val target = if (offsetX.value > 0) 1200f else -1200f
+                                                offsetX.animateTo(target, tween(250))
+                                                currentList = currentList.drop(1) + currentList.take(1)
+                                                offsetX.snapTo(0f)
+                                            } else {
+                                                offsetX.animateTo(0f, spring(stiffness = Spring.StiffnessMediumLow))
+                                            }
+                                        }
+                                    },
+                                    onHorizontalDrag = { change, dragAmount ->
+                                        change.consume()
+                                        scope.launch { offsetX.snapTo(offsetX.value + dragAmount) }
+                                    }
+                                )
+                            }
+                        } else Modifier
+                    )
+            ) {
+                NotificationItemCard(
+                    item = item,
+                    themeColor = themeColor,
+                    fontFamily = fontFamily,
+                    activity = activity,
+                    onDismiss = null, // Exempt from dismissal
+                    onNotificationClick = {
+                        if (isTopCard) {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            onExpandedClick(pkg)
+                        }
+                    },
+                    onLongPress = {
+                        if (isTopCard) {
+                            val resolvedAppInfo = try {
+                                val label = activity.packageManager.getApplicationLabel(activity.packageManager.getApplicationInfo(pkg, 0)).toString()
+                                val icon = activity.packageManager.getApplicationIcon(pkg)
+                                AppInfo(label = label, packageName = pkg, icon = icon)
+                            } catch (_: Exception) {
+                                AppInfo(
+                                    label = item.appName,
+                                    packageName = pkg,
+                                    icon = try {
+                                        activity.packageManager.getApplicationIcon(pkg)
+                                    } catch (_: Exception) {
+                                        activity.getDrawable(android.R.drawable.sym_def_app_icon)!!
+                                    }
+                                )
+                            }
+                            onLongPressApp?.invoke(resolvedAppInfo)
+                        }
+                    }
+                )
+            }
+        }
+
+        // Global Overflow Badge
+        if (currentList.size > 1) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 12.dp, end = 12.dp)
+                    .zIndex(20f)
+                    .background(themeColor, shape = CircleShape)
+                    .padding(horizontal = 8.dp, vertical = 2.dp)
+            ) {
+                Text(
+                    text = "+${currentList.size - 1}",
+                    fontSize = 10.sp,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = fontFamily
+                )
+            }
+        }
+    }
+}
+
+@Composable
 fun SwipeToDismissNotification(
     item: AppNotification,
     themeColor: Color,
@@ -262,9 +400,32 @@ fun SwipeToDismissNotification(
     onLongPress: (() -> Unit)? = null,
     contentColor: Color = Color.White
 ) {
+    NotificationItemCard(
+        item = item,
+        themeColor = themeColor,
+        fontFamily = fontFamily,
+        activity = activity,
+        onDismiss = onDismiss,
+        onNotificationClick = onNotificationClick,
+        modifier = modifier,
+        onLongPress = onLongPress
+    )
+}
+
+@Composable
+fun NotificationItemCard(
+    item: AppNotification,
+    themeColor: Color,
+    fontFamily: FontFamily,
+    activity: MainActivity,
+    onDismiss: (() -> Unit)?,
+    onNotificationClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    onLongPress: (() -> Unit)? = null
+) {
     val haptic = LocalHapticFeedback.current
     val density = LocalDensity.current
-    val offsetX = remember { androidx.compose.animation.core.Animatable(0f) }
+    val offsetX = remember { Animatable(0f) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     
@@ -286,24 +447,26 @@ fun SwipeToDismissNotification(
             .fillMaxWidth()
             .clip(RoundedCornerShape(28.dp))
     ) {
-        // Dismiss Background
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .background(
-                    color = if (offsetX.value != 0f) MaterialTheme.colorScheme.error.copy(alpha = 0.25f) else Color.Transparent,
-                    shape = RoundedCornerShape(28.dp)
-                )
-                .padding(horizontal = 20.dp),
-            contentAlignment = if (offsetX.value > 0) Alignment.CenterStart else Alignment.CenterEnd
-        ) {
-            if (offsetX.value != 0f) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = "Dismiss",
-                    tint = MaterialTheme.colorScheme.onErrorContainer,
-                    modifier = Modifier.size(24.dp)
-                )
+        // Dismiss Background (Only if onDismiss is provided)
+        if (onDismiss != null) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .background(
+                        color = if (offsetX.value != 0f) MaterialTheme.colorScheme.error.copy(alpha = 0.25f) else Color.Transparent,
+                        shape = RoundedCornerShape(28.dp)
+                    )
+                    .padding(horizontal = 20.dp),
+                contentAlignment = if (offsetX.value > 0) Alignment.CenterStart else Alignment.CenterEnd
+            ) {
+                if (offsetX.value != 0f) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Dismiss",
+                        tint = MaterialTheme.colorScheme.onErrorContainer,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             }
         }
 
@@ -311,13 +474,14 @@ fun SwipeToDismissNotification(
         Column(
             modifier = Modifier
                 .offset { androidx.compose.ui.unit.IntOffset(offsetX.value.roundToInt(), 0) }
-                .pointerInput(item.key) {
-                    var totalDrag = 0f
+                .pointerInput(item.key, onDismiss) {
+                    if (onDismiss == null) return@pointerInput
+                    var totalDragAmount = 0f
                     detectHorizontalDragGestures(
                         onDragEnd = {
-                            val threshold = with(density) { 100.dp.toPx() }
-                            if (abs(totalDrag) > threshold) {
-                                val target = if (totalDrag > 0) size.width.toFloat() else -size.width.toFloat()
+                            val threshold = with(density) { 96.dp.toPx() }
+                            if (abs(totalDragAmount) > threshold) {
+                                val target = if (totalDragAmount > 0) size.width.toFloat() else -size.width.toFloat()
                                 scope.launch {
                                     offsetX.animateTo(target, tween(250))
                                     onDismiss()
@@ -327,19 +491,19 @@ fun SwipeToDismissNotification(
                                     offsetX.animateTo(0f, spring(stiffness = Spring.StiffnessMediumLow))
                                 }
                             }
-                            totalDrag = 0f
+                            totalDragAmount = 0f
                         },
                         onDragCancel = {
                             scope.launch {
                                 offsetX.animateTo(0f, spring(stiffness = Spring.StiffnessMediumLow))
                             }
-                            totalDrag = 0f
+                            totalDragAmount = 0f
                         },
                         onHorizontalDrag = { change, dragAmount ->
                             change.consume()
-                            totalDrag += dragAmount
+                            totalDragAmount += dragAmount
                             scope.launch {
-                                offsetX.snapTo(totalDrag)
+                                offsetX.snapTo(totalDragAmount)
                             }
                         }
                     )
@@ -401,7 +565,7 @@ fun SwipeToDismissNotification(
                                         val isAutoCancel = (sbn.notification.flags and Notification.FLAG_AUTO_CANCEL) != 0
                                         if (isAutoCancel) {
                                             MyNotificationListenerService.instance?.cancelNotification(item.key)
-                                            onDismiss()
+                                            onDismiss?.invoke()
                                         }
                                     } else {
                                         onNotificationClick()
@@ -571,7 +735,7 @@ fun SwipeToDismissNotification(
                                         action.actionIntent?.send(context, 0, fillInIntent)
                                         replyText = ""
                                         activeReplyActionIndex = -1
-                                        onDismiss()
+                                        onDismiss?.invoke()
                                     } catch (e: Exception) {
                                         e.printStackTrace()
                                     }
