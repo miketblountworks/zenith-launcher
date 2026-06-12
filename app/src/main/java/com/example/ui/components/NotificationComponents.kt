@@ -45,6 +45,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -397,27 +398,32 @@ fun SwipeToDismissNotification(
     var activeReplyActionIndex by remember { mutableIntStateOf(-1) }
     var replyText by remember { mutableStateOf("") }
 
+    // Design-specific colors from reference image
+    val glassBackground = Color.White.copy(alpha = 0.15f)
+    val glassBorder = Color.White.copy(alpha = 0.15f)
+    val actionTextColor = Color(0xFF9C27B0) // Deep purple from reference
+
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(28.dp))
     ) {
         Box(
             modifier = Modifier
                 .matchParentSize()
                 .background(
-                    color = if (offsetX.value != 0f) MaterialTheme.colorScheme.error.copy(alpha = 0.15f) else Color.Transparent,
-                    shape = RoundedCornerShape(20.dp)
+                    color = if (offsetX.value != 0f) MaterialTheme.colorScheme.error.copy(alpha = 0.25f) else Color.Transparent,
+                    shape = RoundedCornerShape(28.dp)
                 )
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = 20.dp),
             contentAlignment = if (offsetX.value > 0) Alignment.CenterStart else Alignment.CenterEnd
         ) {
             if (offsetX.value != 0f) {
                 Icon(
                     imageVector = Icons.Default.Delete,
                     contentDescription = "Dismiss",
-                    tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(20.dp)
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp)
                 )
             }
         }
@@ -429,11 +435,11 @@ fun SwipeToDismissNotification(
                     var totalDrag = 0f
                     detectHorizontalDragGestures(
                         onDragEnd = {
-                            val threshold = with(density) { 96.dp.toPx() }
+                            val threshold = with(density) { 100.dp.toPx() }
                             if (abs(totalDrag) > threshold) {
                                 val target = if (totalDrag > 0) size.width.toFloat() else -size.width.toFloat()
                                 scope.launch {
-                                    offsetX.animateTo(target, tween(200))
+                                    offsetX.animateTo(target, tween(250))
                                     onDismiss()
                                 }
                             } else {
@@ -459,11 +465,9 @@ fun SwipeToDismissNotification(
                     )
                 }
                 .fillMaxWidth()
-                .shadow(elevation = 10.dp, shape = RoundedCornerShape(20.dp))
-                .defaultMinSize(minHeight = 84.dp)
-                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(20.dp))
-                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(20.dp))
-                .padding(12.dp)
+                .background(glassBackground, RoundedCornerShape(28.dp))
+                .border(1.dp, glassBorder, RoundedCornerShape(28.dp))
+                .padding(16.dp)
         ) {
             Row(
                 modifier = Modifier
@@ -525,79 +529,72 @@ fun SwipeToDismissNotification(
                     },
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                // Circular App Icon
                 Box(
                     modifier = Modifier
-                        .size(34.dp)
+                        .size(42.dp)
                         .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                        .background(Color.White.copy(alpha = 0.2f)),
                     contentAlignment = Alignment.Center
                 ) {
                     if (appIconDrawable != null) {
                         androidx.compose.foundation.Image(
                             painter = rememberAsyncImagePainter(appIconDrawable),
                             contentDescription = "${item.appName} Icon",
-                            modifier = Modifier.fillMaxSize().padding(4.dp)
+                            modifier = Modifier.fillMaxSize().padding(6.dp)
                         )
                     } else {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(themeColor.copy(alpha = 0.2f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = item.appName.firstOrNull()?.uppercase() ?: "",
-                                color = themeColor,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp,
-                                fontFamily = fontFamily
-                            )
-                        }
+                        Text(
+                            text = item.appName.firstOrNull()?.uppercase() ?: "",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            fontFamily = fontFamily
+                        )
                     }
                 }
                 
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(16.dp))
                 
                 Column(modifier = Modifier.weight(1f)) {
-                    val softShadow = Shadow(color = Color.Black.copy(alpha = 0.6f), offset = Offset(1f, 2f), blurRadius = 4f)
                     Text(
                         text = item.appName,
-                        fontSize = 12.sp,
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontFamily = fontFamily,
-                        style = TextStyle(shadow = softShadow)
+                        color = Color.Black,
+                        fontFamily = fontFamily
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = item.text,
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 13.sp,
+                        color = Color.Black.copy(alpha = 0.8f),
                         fontFamily = fontFamily,
                         maxLines = 2,
-                        style = TextStyle(shadow = softShadow)
+                        lineHeight = 16.sp
                     )
                 }
             }
 
             val actions = item.sbn?.notification?.actions
             if (actions != null && actions.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
-                LazyRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(start = 58.dp),
+                    horizontalArrangement = Arrangement.spacedBy(24.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    items(actions.size) { index ->
-                        val action = actions[index]
+                    actions.take(3).forEachIndexed { index, action ->
                         val remoteInputs = action.remoteInputs
                         val isReply = remoteInputs != null && remoteInputs.isNotEmpty()
                         
-                        Box(
+                        Text(
+                            text = action.title?.toString() ?: "Action",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = actionTextColor,
+                            fontFamily = fontFamily,
                             modifier = Modifier
-                                .clip(RoundedCornerShape(16.dp))
-                                .border(1.dp, themeColor.copy(alpha = 0.35f), RoundedCornerShape(16.dp))
-                                .background(themeColor.copy(alpha = 0.08f))
                                 .clickable {
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                     if (isReply) {
@@ -605,34 +602,10 @@ fun SwipeToDismissNotification(
                                     } else {
                                         try {
                                             action.actionIntent?.send(context, 0, null)
-                                        } catch (_: Exception) {
-                                            // ignore
-                                        }
+                                        } catch (_: Exception) {}
                                     }
                                 }
-                                .padding(horizontal = 12.dp, vertical = 6.dp)
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                if (isReply) {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.Send,
-                                        contentDescription = null,
-                                        tint = themeColor,
-                                        modifier = Modifier.size(11.dp)
-                                    )
-                                }
-                                Text(
-                                    text = action.title?.toString() ?: "Action",
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = themeColor,
-                                    fontFamily = fontFamily
-                                )
-                            }
-                        }
+                        )
                     }
                 }
             }
@@ -641,7 +614,7 @@ fun SwipeToDismissNotification(
                 val action = actions[activeReplyActionIndex]
                 val remoteInputs = action.remoteInputs
                 if (remoteInputs != null && remoteInputs.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
@@ -652,25 +625,25 @@ fun SwipeToDismissNotification(
                             value = replyText,
                             onValueChange = { replyText = it },
                             textStyle = TextStyle(
-                                color = MaterialTheme.colorScheme.onSurface,
-                                fontSize = 12.sp,
+                                color = Color.Black,
+                                fontSize = 13.sp,
                                 fontFamily = fontFamily
                             ),
                             modifier = Modifier
                                 .weight(1f)
-                                .heightIn(min = 48.dp)
+                                .heightIn(min = 44.dp)
                                 .background(
-                                    MaterialTheme.colorScheme.surfaceContainerHigh,
-                                    RoundedCornerShape(12.dp)
+                                    Color.White.copy(alpha = 0.3f),
+                                    RoundedCornerShape(22.dp)
                                 )
                                 .border(
                                     1.dp,
-                                    MaterialTheme.colorScheme.outlineVariant,
-                                    RoundedCornerShape(12.dp)
+                                    Color.White.copy(alpha = 0.2f),
+                                    RoundedCornerShape(22.dp)
                                 )
-                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                                .padding(horizontal = 16.dp, vertical = 10.dp),
                             singleLine = true,
-                            cursorBrush = SolidColor(themeColor),
+                            cursorBrush = SolidColor(actionTextColor),
                             decorationBox = { innerTextField ->
                                 Box(
                                     modifier = Modifier.fillMaxWidth(),
@@ -679,8 +652,8 @@ fun SwipeToDismissNotification(
                                     if (replyText.isEmpty()) {
                                         Text(
                                             text = placeholderLabel,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                                            fontSize = 11.sp,
+                                            color = Color.Black.copy(alpha = 0.4f),
+                                            fontSize = 13.sp,
                                             fontFamily = fontFamily
                                         )
                                     }
@@ -689,7 +662,7 @@ fun SwipeToDismissNotification(
                             }
                         )
                         
-                        Button(
+                        IconButton(
                             onClick = {
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 if (replyText.isNotEmpty()) {
@@ -709,16 +682,15 @@ fun SwipeToDismissNotification(
                                     }
                                 }
                             },
-                            colors = ButtonDefaults.buttonColors(containerColor = themeColor),
-                            shape = RoundedCornerShape(12.dp),
-                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
-                            modifier = Modifier.height(38.dp)
+                            modifier = Modifier
+                                .size(44.dp)
+                                .background(actionTextColor, CircleShape)
                         ) {
-                            Text(
-                                text = "Send",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.Black
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.Send,
+                                contentDescription = "Send",
+                                tint = Color.White,
+                                modifier = Modifier.size(20.dp)
                             )
                         }
                     }
