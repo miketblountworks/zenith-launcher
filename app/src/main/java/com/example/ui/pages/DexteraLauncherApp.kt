@@ -1925,10 +1925,10 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(6.dp))
+                    val isNotifPage = displayedPages.getOrNull(currentPageIndex) == "Notifications"
 
                     androidx.compose.animation.AnimatedVisibility(
-                        visible = !isNotificationsExpanded,
+                        visible = !isNotificationsExpanded && !isNotifPage,
                         enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
                         exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top)
                     ) {

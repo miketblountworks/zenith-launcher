@@ -9,7 +9,6 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -21,7 +20,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -30,6 +28,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -40,8 +39,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -59,10 +56,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
@@ -72,6 +66,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
@@ -150,103 +145,47 @@ fun NotificationSummaryWidget(
     notifications: List<AppNotification>,
     onDismissNotification: (AppNotification) -> Unit,
     onNotificationClick: (appName: String, text: String, defaultPkg: String) -> Unit,
-    allowedCategories: Set<String> = setOf("Finance 💰", "Travel ✈️", "Social 💬", "Internet 🌐", "Entertainment 🎵", "Shopping 🛍️", "General 📦"),
+    allowedCategories: Set<String> = setOf("General 📦"),
     contentColor: Color = Color.White
 ) {
-    val activeNotifications = remember(notifications, allowedCategories) {
-        notifications.filter {
-            val cat = getNotificationCategory(it.appName, it.text, it.pkg)
-            allowedCategories.contains(cat)
-        }
-    }
+    val activeNotifications = remember(notifications) { notifications }
 
     Card(
-        modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f)),
-        shape = RoundedCornerShape(12.dp)
+        modifier = modifier.fillMaxWidth().padding(vertical = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        shape = RoundedCornerShape(24.dp)
     ) {
-        Column(modifier = Modifier.padding(10.dp)) {
+        Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(12.dp))
                     .clickable { onExpandedChange(!isExpanded) }
-                    .padding(vertical = 4.dp, horizontal = 4.dp),
+                    .padding(vertical = 8.dp, horizontal = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Notifications, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(14.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                    Icon(Icons.Default.Notifications, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(12.dp))
                     val count = activeNotifications.size
-                    val titleText = if (count == 0) "No notifications · All clear!" else "$count Bundled Notification Summary"
-                    Text(titleText, fontSize = 11.sp, fontFamily = fontFamily, fontWeight = FontWeight.Bold, color = contentColor)
+                    val titleText = if (count == 0) "All clear!" else "$count Bundled Notifications"
+                    Text(
+                        text = titleText,
+                        fontSize = 14.sp,
+                        fontFamily = fontFamily,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
                 if (activeNotifications.isNotEmpty()) {
-                    Text(if (isExpanded) "Collapse" else "Expand", fontSize = 10.sp, color = primaryColor)
+                    Text(if (isExpanded) "Collapse" else "Expand", fontSize = 12.sp, color = primaryColor, fontWeight = FontWeight.Bold)
                 }
             }
             if (isExpanded && activeNotifications.isNotEmpty()) {
-                var activeChipFilter by remember { mutableStateOf("All") }
-                
-                val presentCategories = remember(activeNotifications) {
-                    activeNotifications.map { getNotificationCategory(it.appName, it.text, it.pkg) }.distinct()
-                }
-
-                if (presentCategories.size > 1) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    LazyRow(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        item {
-                            val isSelected = activeChipFilter == "All"
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(20.dp))
-                                    .border(BorderStroke(1.dp, if (isSelected) primaryColor else Color.White.copy(alpha = 0.15f)), RoundedCornerShape(20.dp))
-                                    .background(if (isSelected) primaryColor.copy(alpha = 0.15f) else Color.Transparent)
-                                    .clickable { activeChipFilter = "All" }
-                                    .padding(horizontal = 10.dp, vertical = 4.dp)
-                            ) {
-                                Text("All", fontSize = 9.sp, color = if (isSelected) primaryColor else Color.White, fontWeight = FontWeight.Bold)
-                            }
-                        }
-                        
-                        presentCategories.forEach { cat ->
-                            item {
-                                val isSelected = activeChipFilter == cat
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(20.dp))
-                                        .border(BorderStroke(1.dp, if (isSelected) primaryColor else Color.White.copy(alpha = 0.15f)), RoundedCornerShape(20.dp))
-                                        .background(if (isSelected) primaryColor.copy(alpha = 0.15f) else Color.Transparent)
-                                        .clickable { activeChipFilter = cat }
-                                        .padding(horizontal = 10.dp, vertical = 4.dp)
-                                ) {
-                                    Text(cat, fontSize = 9.sp, color = if (isSelected) primaryColor else Color.White, fontWeight = FontWeight.Bold)
-                                }
-                            }
-                        }
-                    }
-                }
-
-                val filteredNotifications = remember(activeNotifications, activeChipFilter) {
-                    activeNotifications.filter { activeChipFilter == "All" || getNotificationCategory(it.appName, it.text, it.pkg) == activeChipFilter }
-                }
-
-                val categorized = filteredNotifications.groupBy { getNotificationCategory(it.appName, it.text, it.pkg) }
-                val categoryOrder = listOf(
-                    "Finance 💰",
-                    "Travel ✈️",
-                    "Social 💬",
-                    "Internet 🌐",
-                    "Entertainment 🎵",
-                    "Shopping 🛍️",
-                    "General 📦"
-                )
-                
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(12.dp))
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -254,111 +193,52 @@ fun NotificationSummaryWidget(
                         .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    categoryOrder.forEach { categoryName ->
-                        val itemsInCategory = categorized[categoryName] ?: emptyList()
-                        if (itemsInCategory.isNotEmpty()) {
-                            Column(
+                    activeNotifications.forEach { item ->
+                        SwipeToDeleteContainer(
+                            onDismissed = { onDismissNotification(item) }
+                        ) {
+                            Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .background(Color.White.copy(alpha = 0.02f), RoundedCornerShape(8.dp))
-                                    .border(0.5.dp, Color.White.copy(alpha = 0.05f), RoundedCornerShape(8.dp))
-                                    .padding(6.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                                    .clickable { onNotificationClick(item.appName, item.text, item.pkg) }
+                                    .padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Row(
+                                Box(
                                     modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 4.dp, vertical = 4.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
+                                        .size(32.dp)
+                                        .clip(CircleShape)
+                                        .background(primaryColor.copy(alpha = 0.2f)),
+                                    contentAlignment = Alignment.Center
                                 ) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Box(
-                                            modifier = Modifier
-                                                .background(primaryColor.copy(alpha = 0.15f), RoundedCornerShape(4.dp))
-                                                .padding(horizontal = 6.dp, vertical = 2.dp)
-                                        ) {
-                                            Text(
-                                                text = categoryName,
-                                                fontSize = 10.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = primaryColor,
-                                                fontFamily = fontFamily
-                                            )
-                                        }
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Box(
-                                            modifier = Modifier
-                                                .background(Color.White.copy(alpha = 0.1f), RoundedCornerShape(10.dp))
-                                                .padding(horizontal = 6.dp, vertical = 1.dp)
-                                        ) {
-                                            Text(
-                                                text = "${itemsInCategory.size}",
-                                                fontSize = 9.sp,
-                                                color = contentColor.copy(alpha = 0.8f),
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        }
-                                    }
-                                    
                                     Text(
-                                        text = "Dismiss All",
-                                        fontSize = 9.sp,
-                                        color = contentColor.copy(alpha = 0.4f),
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(4.dp))
-                                            .clickable {
-                                                itemsInCategory.forEach { item ->
-                                                    onDismissNotification(item)
-                                                }
-                                            }
-                                            .padding(horizontal = 4.dp, vertical = 2.dp)
+                                        text = item.appName.firstOrNull()?.uppercase() ?: "",
+                                        color = primaryColor,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp
                                     )
                                 }
-                                
-                                Spacer(modifier = Modifier.height(4.dp))
-                                
-                                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    itemsInCategory.forEach { item ->
-                                        val app = item.appName
-                                        val text = item.text
-                                        val pkg = item.pkg
-                                        SwipeToDeleteContainer(
-                                            onDismissed = { onDismissNotification(item) }
-                                        ) {
-                                            Row(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .clip(RoundedCornerShape(6.dp))
-                                                    .clickable { onNotificationClick(app, text, pkg) }
-                                                    .padding(vertical = 5.dp, horizontal = 6.dp),
-                                                verticalAlignment = Alignment.Top
-                                            ) {
-                                                Box(
-                                                    modifier = Modifier
-                                                        .padding(top = 4.dp)
-                                                        .size(4.dp)
-                                                        .background(primaryColor, RoundedCornerShape(2.dp))
-                                                )
-                                                Spacer(modifier = Modifier.width(8.dp))
-                                                Column(modifier = Modifier.weight(1f)) {
-                                                    Text(
-                                                        text = app,
-                                                        fontSize = 11.sp,
-                                                        fontWeight = FontWeight.Bold,
-                                                        color = primaryColor,
-                                                        fontFamily = fontFamily
-                                                    )
-                                                    Text(
-                                                        text = text,
-                                                        fontSize = 10.sp,
-                                                        color = contentColor.copy(alpha = 0.7f),
-                                                        maxLines = 2,
-                                                        lineHeight = 12.sp
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = item.appName,
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        fontFamily = fontFamily,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Text(
+                                        text = item.text,
+                                        fontSize = 12.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        fontFamily = fontFamily,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
                                 }
                             }
                         }
@@ -398,16 +278,14 @@ fun SwipeToDismissNotification(
     var activeReplyActionIndex by remember { mutableIntStateOf(-1) }
     var replyText by remember { mutableStateOf("") }
 
-    // Design-specific colors from reference image
-    val glassBackground = Color.White.copy(alpha = 0.15f)
-    val glassBorder = Color.White.copy(alpha = 0.15f)
-    val actionTextColor = Color(0xFF9C27B0) // Deep purple from reference
+    val actionTextColor = Color(0xFF9C27B0)
 
     Box(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(28.dp))
     ) {
+        // Dismiss Background
         Box(
             modifier = Modifier
                 .matchParentSize()
@@ -422,12 +300,13 @@ fun SwipeToDismissNotification(
                 Icon(
                     imageVector = Icons.Default.Delete,
                     contentDescription = "Dismiss",
-                    tint = Color.White,
+                    tint = MaterialTheme.colorScheme.onErrorContainer,
                     modifier = Modifier.size(24.dp)
                 )
             }
         }
 
+        // Foreground Card
         Column(
             modifier = Modifier
                 .offset { androidx.compose.ui.unit.IntOffset(offsetX.value.roundToInt(), 0) }
@@ -465,10 +344,13 @@ fun SwipeToDismissNotification(
                     )
                 }
                 .fillMaxWidth()
-                .background(glassBackground, RoundedCornerShape(28.dp))
-                .border(1.dp, glassBorder, RoundedCornerShape(28.dp))
-                .padding(16.dp)
+                .wrapContentHeight()
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(28.dp))
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f), RoundedCornerShape(28.dp))
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            // Main Content Row
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -534,7 +416,7 @@ fun SwipeToDismissNotification(
                     modifier = Modifier
                         .size(42.dp)
                         .clip(CircleShape)
-                        .background(Color.White.copy(alpha = 0.2f)),
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
                     contentAlignment = Alignment.Center
                 ) {
                     if (appIconDrawable != null) {
@@ -546,7 +428,7 @@ fun SwipeToDismissNotification(
                     } else {
                         Text(
                             text = item.appName.firstOrNull()?.uppercase() ?: "",
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onSurface,
                             fontWeight = FontWeight.Bold,
                             fontSize = 18.sp,
                             fontFamily = fontFamily
@@ -556,32 +438,36 @@ fun SwipeToDismissNotification(
                 
                 Spacer(modifier = Modifier.width(16.dp))
                 
+                // Text content area
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = item.appName,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.Black,
-                        fontFamily = fontFamily
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontFamily = fontFamily,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = item.text,
                         fontSize = 13.sp,
-                        color = Color.Black.copy(alpha = 0.8f),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontFamily = fontFamily,
-                        maxLines = 2,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                         lineHeight = 16.sp
                     )
                 }
             }
 
+            // Action Buttons Row (Placed BELOW the main content Row)
             val actions = item.sbn?.notification?.actions
             if (actions != null && actions.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(12.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(start = 58.dp),
-                    horizontalArrangement = Arrangement.spacedBy(24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(32.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     actions.take(3).forEachIndexed { index, action ->
@@ -590,7 +476,7 @@ fun SwipeToDismissNotification(
                         
                         Text(
                             text = action.title?.toString() ?: "Action",
-                            fontSize = 13.sp,
+                            fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
                             color = actionTextColor,
                             fontFamily = fontFamily,
@@ -610,11 +496,11 @@ fun SwipeToDismissNotification(
                 }
             }
 
+            // Inline Reply Field
             if (activeReplyActionIndex != -1 && actions != null && activeReplyActionIndex < actions.size) {
                 val action = actions[activeReplyActionIndex]
                 val remoteInputs = action.remoteInputs
                 if (remoteInputs != null && remoteInputs.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(12.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
@@ -625,7 +511,7 @@ fun SwipeToDismissNotification(
                             value = replyText,
                             onValueChange = { replyText = it },
                             textStyle = TextStyle(
-                                color = Color.Black,
+                                color = MaterialTheme.colorScheme.onSurface,
                                 fontSize = 13.sp,
                                 fontFamily = fontFamily
                             ),
@@ -633,12 +519,12 @@ fun SwipeToDismissNotification(
                                 .weight(1f)
                                 .heightIn(min = 44.dp)
                                 .background(
-                                    Color.White.copy(alpha = 0.3f),
+                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                                     RoundedCornerShape(22.dp)
                                 )
                                 .border(
                                     1.dp,
-                                    Color.White.copy(alpha = 0.2f),
+                                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
                                     RoundedCornerShape(22.dp)
                                 )
                                 .padding(horizontal = 16.dp, vertical = 10.dp),
@@ -652,9 +538,11 @@ fun SwipeToDismissNotification(
                                     if (replyText.isEmpty()) {
                                         Text(
                                             text = placeholderLabel,
-                                            color = Color.Black.copy(alpha = 0.4f),
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                                             fontSize = 13.sp,
-                                            fontFamily = fontFamily
+                                            fontFamily = fontFamily,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
                                         )
                                     }
                                     innerTextField()

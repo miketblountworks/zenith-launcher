@@ -24,7 +24,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -34,8 +33,6 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -47,19 +44,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.toDrawable
@@ -91,29 +86,27 @@ fun NotificationsPage(
         }
     }
 
-    var selectedFilterCategory by remember { mutableStateOf("All") }
     val expandedGroups = remember { mutableStateMapOf<String, Boolean>() }
 
     Box(
         modifier = modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(horizontal = 8.dp, vertical = 16.dp)
     ) {
-        Card(
+        // Main Container - Now Transparent
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = 80.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.2f)),
-            shape = RoundedCornerShape(48.dp),
-            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f))
+                .padding(bottom = 80.dp)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(24.dp)
+                    .padding(horizontal = 4.dp, vertical = 24.dp)
             ) {
+                // Header
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                    modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, bottom = 16.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -122,15 +115,17 @@ fun NotificationsPage(
                         fontSize = 12.sp,
                         letterSpacing = 0.5.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.Black.copy(alpha = 0.6f),
-                        fontFamily = fontFamily
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        fontFamily = fontFamily,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
 
                     if (activeNotifications.isNotEmpty()) {
                         Text(
                             text = "Clear All",
                             fontSize = 12.sp,
-                            color = Color(0xFFE57373),
+                            color = MaterialTheme.colorScheme.error,
                             fontWeight = FontWeight.Bold,
                             fontFamily = fontFamily,
                             modifier = Modifier
@@ -148,59 +143,7 @@ fun NotificationsPage(
                     }
                 }
 
-                val presentCategories = remember(activeNotifications) {
-                    activeNotifications.map { getNotificationCategory(it.appName, it.text, it.pkg) }.distinct()
-                }
-
-                if (presentCategories.size > 1) {
-                    LazyRow(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        item {
-                            val isSelected = selectedFilterCategory == "All"
-                            FilterChip(
-                                selected = isSelected,
-                                onClick = { selectedFilterCategory = "All" },
-                                label = { Text("All", fontSize = 10.sp, fontWeight = FontWeight.Bold) },
-                                shape = RoundedCornerShape(20.dp),
-                                colors = FilterChipDefaults.filterChipColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                    labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    selectedContainerColor = themeColor,
-                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary
-                                ),
-                                border = null
-                            )
-                        }
-
-                        presentCategories.forEach { cat ->
-                            item {
-                                val isSelected = selectedFilterCategory == cat
-                                FilterChip(
-                                    selected = isSelected,
-                                    onClick = { selectedFilterCategory = cat },
-                                    label = { Text(cat, fontSize = 10.sp, fontWeight = FontWeight.Bold) },
-                                    shape = RoundedCornerShape(20.dp),
-                                    colors = FilterChipDefaults.filterChipColors(
-                                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                        labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        selectedContainerColor = themeColor,
-                                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary
-                                    ),
-                                    border = null
-                                )
-                            }
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-
-                val displayedNotifications = remember(activeNotifications, selectedFilterCategory) {
-                    activeNotifications.filter { selectedFilterCategory == "All" || getNotificationCategory(it.appName, it.text, it.pkg) == selectedFilterCategory }
-                }
-
-                if (displayedNotifications.isEmpty()) {
+                if (activeNotifications.isEmpty()) {
                     Box(
                         modifier = Modifier.weight(1f).fillMaxWidth(),
                         contentAlignment = Alignment.Center
@@ -223,21 +166,16 @@ fun NotificationsPage(
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface,
-                                fontFamily = fontFamily
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "Your space is decluttered and clean.",
-                                fontSize = 12.sp,
-                                color = contentColor,
-                                fontFamily = fontFamily
+                                fontFamily = fontFamily,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
                 } else {
-                    val groupedNotifications = remember(displayedNotifications) {
+                    val groupedNotifications = remember(activeNotifications) {
                         val groups = linkedMapOf<String, List<AppNotification>>()
-                        for (notification in displayedNotifications) {
+                        for (notification in activeNotifications) {
                             val pkg = notification.pkg
                             val list = groups.getOrPut(pkg) { mutableListOf() }
                             (list as MutableList).add(notification)
@@ -246,16 +184,14 @@ fun NotificationsPage(
                     }
 
                     val listSize = groupedNotifications.size
-                    val middle = Int.MAX_VALUE / 2
-                    val startIndex = if (listSize > 0) middle - (middle % listSize) else 0
-                    val listState = rememberLazyListState(initialFirstVisibleItemIndex = startIndex)
+                    val listState = rememberLazyListState()
 
                     LazyColumn(
                         state = listState,
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxWidth()
-                            .graphicsLayer { alpha = 0.99f }
+                            .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
                             .drawWithContent {
                                 drawContent()
                                 val topFadePx = 24.dp.toPx()
@@ -270,11 +206,11 @@ fun NotificationsPage(
                                     blendMode = androidx.compose.ui.graphics.BlendMode.DstIn
                                 )
                             },
-                        contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp),
+                        contentPadding = PaddingValues(top = 32.dp, bottom = 24.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        items(count = if (listSize > 0) Int.MAX_VALUE else 0) { index ->
-                            val (pkg, groupList) = groupedNotifications[index % listSize]
+                        items(count = listSize) { index ->
+                            val (pkg, groupList) = groupedNotifications[index]
                             if (groupList.size == 1) {
                                 val item = groupList[0]
                                 SwipeToDismissNotification(
@@ -294,7 +230,7 @@ fun NotificationsPage(
                                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                         onNotificationClick(item.appName, item.text, item.pkg)
                                     },
-                                    contentColor = contentColor,
+                                    contentColor = MaterialTheme.colorScheme.onSurface,
                                     onLongPress = {
                                         val resolvedAppInfo = try {
                                             val label = activity.packageManager.getApplicationLabel(activity.packageManager.getApplicationInfo(item.pkg, 0)).toString()
@@ -349,9 +285,10 @@ fun NotificationsPage(
                                                     )
                                                 }
                                         ) {
+                                            // Visual Stack Effect
                                             Card(
                                                 modifier = Modifier
-                                                    .fillMaxWidth(0.92f)
+                                                    .fillMaxWidth(0.96f)
                                                     .align(Alignment.BottomCenter)
                                                     .offset(y = 8.dp)
                                                     .graphicsLayer {
@@ -359,7 +296,7 @@ fun NotificationsPage(
                                                         scaleY = 0.95f
                                                     },
                                                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-                                                shape = RoundedCornerShape(14.dp),
+                                                shape = RoundedCornerShape(24.dp),
                                                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                                             ) {
                                                 Box(modifier = Modifier.fillMaxWidth().height(64.dp))
@@ -382,7 +319,7 @@ fun NotificationsPage(
                                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                                     expandedGroups[pkg] = true
                                                 },
-                                                contentColor = contentColor,
+                                                contentColor = MaterialTheme.colorScheme.onSurface,
                                                 onLongPress = {
                                                     val resolvedAppInfo = try {
                                                         val label = activity.packageManager.getApplicationLabel(activity.packageManager.getApplicationInfo(pkg, 0)).toString()
@@ -406,14 +343,14 @@ fun NotificationsPage(
                                             Box(
                                                 modifier = Modifier
                                                     .align(Alignment.TopEnd)
-                                                    .padding(top = 8.dp, end = 8.dp)
+                                                    .padding(top = 12.dp, end = 12.dp)
                                                     .background(themeColor, shape = CircleShape)
                                                     .padding(horizontal = 8.dp, vertical = 2.dp)
                                             ) {
                                                 Text(
                                                     text = "+${groupList.size - 1}",
-                                                    fontSize = 9.sp,
-                                                    color = Color.Black,
+                                                    fontSize = 10.sp,
+                                                    color = Color.White,
                                                     fontWeight = FontWeight.Bold,
                                                     fontFamily = fontFamily
                                                 )
@@ -427,28 +364,30 @@ fun NotificationsPage(
                                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                                     expandedGroups[pkg] = false
                                                 }
-                                                .padding(vertical = 4.dp, horizontal = 4.dp),
+                                                .padding(vertical = 8.dp, horizontal = 4.dp),
                                             horizontalArrangement = Arrangement.SpaceBetween,
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                                                 Icon(
                                                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                                     contentDescription = "Collapse",
                                                     tint = themeColor,
-                                                    modifier = Modifier.size(16.dp).graphicsLayer { rotationZ = 90f }
+                                                    modifier = Modifier.size(18.dp).graphicsLayer { rotationZ = 90f }
                                                 )
-                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Spacer(modifier = Modifier.width(8.dp))
                                                 Text(
                                                     text = "${groupList[0].appName.uppercase()} (${groupList.size})",
-                                                    fontSize = 11.sp,
+                                                    fontSize = 12.sp,
                                                     letterSpacing = 1.sp,
                                                     fontWeight = FontWeight.Bold,
                                                     color = themeColor,
-                                                    fontFamily = fontFamily
+                                                    fontFamily = fontFamily,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis
                                                 )
                                             }
-                                            Text(text = "Collapse Stack", fontSize = 11.sp, color = contentColor, fontFamily = fontFamily)
+                                            Text(text = "Collapse", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface, fontFamily = fontFamily)
                                         }
 
                                         AnimatedVisibility(
@@ -456,7 +395,7 @@ fun NotificationsPage(
                                             enter = expandVertically() + fadeIn(),
                                             exit = shrinkVertically() + fadeOut()
                                         ) {
-                                            Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                                                 groupList.forEach { item ->
                                                     SwipeToDismissNotification(
                                                         item = item,
@@ -475,7 +414,7 @@ fun NotificationsPage(
                                                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                                             onNotificationClick(item.appName, item.text, item.pkg)
                                                         },
-                                                        contentColor = contentColor,
+                                                        contentColor = MaterialTheme.colorScheme.onSurface,
                                                         onLongPress = {
                                                             val resolvedAppInfo = try {
                                                                 val label = activity.packageManager.getApplicationLabel(activity.packageManager.getApplicationInfo(item.pkg, 0)).toString()
@@ -507,21 +446,30 @@ fun NotificationsPage(
             }
         }
 
+        // Integrated Search Bar
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 8.dp)
                 .fillMaxWidth()
                 .height(64.dp)
-                .background(Color.White.copy(alpha = 0.2f), RoundedCornerShape(32.dp))
-                .border(1.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(32.dp))
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(32.dp))
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f), RoundedCornerShape(32.dp))
                 .padding(horizontal = 16.dp),
             contentAlignment = Alignment.Center
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                Icon(imageVector = Icons.Default.Search, contentDescription = null, tint = Color.Black.copy(alpha = 0.6f), modifier = Modifier.size(24.dp))
+                Icon(imageVector = Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f), modifier = Modifier.size(24.dp))
                 Spacer(modifier = Modifier.width(12.dp))
-                Text(text = "Search contacts, apps, web...", color = Color.Black.copy(alpha = 0.4f), fontSize = 15.sp, fontFamily = fontFamily, modifier = Modifier.weight(1f))
+                Text(
+                    text = "Search contacts, apps, web...",
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                    fontSize = 15.sp,
+                    fontFamily = fontFamily,
+                    modifier = Modifier.weight(1f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
                 Box(modifier = Modifier.size(36.dp).background(Color(0xFF9C27B0), CircleShape), contentAlignment = Alignment.Center) {
                     Text(text = "MT", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
