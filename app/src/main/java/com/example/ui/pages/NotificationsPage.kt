@@ -75,7 +75,8 @@ fun NotificationsPage(
     allowedCategories: Set<String>,
     modifier: Modifier = Modifier,
     onLongPressApp: ((AppInfo) -> Unit)? = null,
-    onNotificationClick: (appName: String, text: String, defaultPkg: String) -> Unit
+    onNotificationClick: (appName: String, text: String, defaultPkg: String) -> Unit,
+    contentColor: Color = Color.White   // adaptive text
 ) {
     val haptic = LocalHapticFeedback.current
     
@@ -118,7 +119,7 @@ fun NotificationsPage(
                         fontSize = 11.sp,
                         letterSpacing = 0.15.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground,
+                        color = contentColor,
                         fontFamily = fontFamily,
                         style = TextStyle(
                             shadow = Shadow(
@@ -133,7 +134,7 @@ fun NotificationsPage(
                         Text(
                             text = "Clear All",
                             fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.error,
+                            color = if (contentColor == Color.White) MaterialTheme.colorScheme.error else Color(0xFFB71C1C),
                             fontWeight = FontWeight.Bold,
                             fontFamily = fontFamily,
                             modifier = Modifier
@@ -234,7 +235,7 @@ fun NotificationsPage(
                         Text(
                             text = "Your space is decluttered and clean.",
                             fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = contentColor,
                             fontFamily = fontFamily
                         )
                     }
@@ -299,7 +300,8 @@ fun NotificationsPage(
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                     onNotificationClick(item.appName, item.text, item.pkg)
                                 },
-                                onLongPress = {
+                                contentColor = contentColor,
+                                                    onLongPress = {
                                     val resolvedAppInfo = try {
                                         val label = activity.packageManager.getApplicationLabel(activity.packageManager.getApplicationInfo(item.pkg, 0)).toString()
                                         val icon = activity.packageManager.getApplicationIcon(item.pkg)
@@ -390,7 +392,8 @@ fun NotificationsPage(
                                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                                 expandedGroups[pkg] = true
                                             },
-                                            onLongPress = {
+                                            contentColor = contentColor,
+                                                    onLongPress = {
                                                 val resolvedAppInfo = try {
                                                     val label = activity.packageManager.getApplicationLabel(activity.packageManager.getApplicationInfo(pkg, 0)).toString()
                                                     val icon = activity.packageManager.getApplicationIcon(pkg)
@@ -462,7 +465,7 @@ fun NotificationsPage(
                                         Text(
                                             text = "Collapse Stack",
                                             fontSize = 11.sp,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            color = contentColor,
                                             fontFamily = fontFamily
                                         )
                                     }
@@ -494,6 +497,7 @@ fun NotificationsPage(
                                                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                                         onNotificationClick(item.appName, item.text, item.pkg)
                                                     },
+                                                    contentColor = contentColor,
                                                     onLongPress = {
                                                         val resolvedAppInfo = try {
                                                             val label = activity.packageManager.getApplicationLabel(activity.packageManager.getApplicationInfo(item.pkg, 0)).toString()

@@ -132,6 +132,7 @@ fun AppRow(
     currentFontFamily: FontFamily,
     iconPackVal: String,
     iconThemeColor: Color,
+    contentColor: Color = Color.White,   // adaptive text color for labels
     onLongPress: () -> Unit,
     onTap: () -> Unit,
 ) {
@@ -199,7 +200,7 @@ fun AppRow(
                 alpha = animatedAlpha
             }
             .background(
-                color = if (isAppHoveredProvider()) Color.White.copy(alpha = 0.08f) else Color.Transparent,
+                color = if (isAppHoveredProvider()) contentColor.copy(alpha = 0.09f) else Color.Transparent,
                 shape = RoundedCornerShape(16.dp)
             )
             .pointerInput(app) {
@@ -226,7 +227,7 @@ fun AppRow(
             fontSize = 13.sp,
             fontWeight = if (isAppHoveredProvider()) FontWeight.SemiBold else FontWeight.Normal,
             fontFamily = currentFontFamily,
-            color = Color.White,
+            color = contentColor,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             style = TextStyle(

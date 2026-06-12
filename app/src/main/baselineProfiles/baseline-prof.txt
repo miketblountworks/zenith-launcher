@@ -1,0 +1,64 @@
+# Dextera Launcher Baseline Profile
+# Clean, valid ART profile for release builds.
+# This helps ART ahead-of-time compile hot paths for much faster cold starts and less jank.
+#
+# Generated-style rules. Keep this file relatively small and accurate.
+# After big refactors, consider adding a proper benchmark module and running
+# ./gradlew :app:generateBaselineProfile (requires benchmark plugin + macrobenchmark).
+
+# MainActivity + launch
+HSPLcom/example/MainActivity;-><init>()V
+HSPLcom/example/MainActivity;->onCreate(Landroid/os/Bundle;)V
+HSPLcom/example/MainActivity;->updatePermissionStates()V
+HSPLcom/example/MainActivity;->refreshAppUsageScores()V
+HSPLcom/example/MainActivity;->decodeAndExtractWallpaperColor()V
+HSPLcom/example/MainActivity;->registerThermalListener()V
+
+# Onboarding / DataStore
+HSPLcom/example/utils/OnboardingManager;-><init>(Landroid/content/Context;)V
+HSPLcom/example/utils/OnboardingDataStore;->getIsOnboardingCompleted()Lkotlinx/coroutines/flow/Flow;
+
+# Core Compose entrypoint
+HSPLcom/example/ui/pages/DexteraLauncherAppKt;->DexteraLauncherApp(Landroidx/compose/ui/Modifier;Lcom/example/viewmodel/LauncherViewModel;Landroidx/compose/runtime/Composer;I)V
+
+# ViewModel + data loading
+HSPLcom/example/viewmodel/LauncherViewModel;-><init>()V
+HSPLcom/example/viewmodel/LauncherViewModel;->loadApps(Landroid/content/pm/PackageManager;)V
+HSPLcom/example/model/LauncherUiState;-><init>(Ljava/util/List;Ljava/util/List;Z)V
+
+# Frequently used models
+HSPLcom/example/model/AppInfo;-><init>(Ljava/lang/String;Ljava/lang/String;Landroid/graphics/drawable/Drawable;)V
+HSPLcom/example/model/AppNotification;-><init>(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Landroid/service/notification/StatusBarNotification;)V
+HSPLcom/example/model/MediaTrackInfo;-><init>(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZJJLandroid/graphics/Bitmap;)V
+HSPLcom/example/model/WidgetData;-><init>(I)V
+
+# Launcher state
+HSPLcom/example/launcher/LauncherState;-><clinit>()V
+
+# Heavy UI components on the main screen
+HSPLcom/example/ui/components/ClockStyleWidgetKt;->ClockStyleWidget(Ljava/lang/String;Landroidx/compose/ui/text/font/FontFamily;Landroidx/compose/ui/graphics/Color;ZZZLandroidx/compose/runtime/Composer;I)V
+HSPLcom/example/ui/components/AppIconComponentsKt;->StyledAppIcon(Landroid/graphics/drawable/Drawable;Ljava/lang/String;Landroidx/compose/ui/graphics/Color;Landroidx/compose/runtime/Composer;I)V
+
+# Notification service (very important for launcher feel)
+HSPLcom/example/service/MyNotificationListenerService;->onListenerConnected()V
+HSPLcom/example/service/MyNotificationListenerService;->fetchActiveNotifications()V
+HSPLcom/example/service/MyNotificationListenerService;->updateActiveMedia()V
+
+# Search engine
+HSPLcom/example/UniversalSearchEngine;->executeUniversalSearch(Landroid/content/Context;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;)Ljava/util/List;
+
+# Media controller
+HSPLcom/example/media/MediaController;->dispatchMediaKey(Landroid/content/Context;I)V
+
+# Some common Compose runtime paths (helps the whole UI)
+HSPLandroidx/compose/runtime/ComposerImpl;->startReplaceableGroup(I)V
+HSPLandroidx/compose/runtime/ComposerImpl;->endReplaceableGroup()V
+
+# Coroutine dispatch (main thread work)
+HSPLkotlinx/coroutines/Dispatchers;->getMain()Lkotlinx/coroutines/MainCoroutineDispatcher;
+
+# PackageManager hot paths (app list)
+HSPLandroid/content/pm/PackageManager;->queryIntentActivities(Landroid/content/Intent;I)Ljava/util/List;
+
+# End of profile. 
+# For best results, profile real user flows (scroll app list, open notifications, search, switch pages).

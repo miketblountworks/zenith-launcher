@@ -149,7 +149,8 @@ fun NotificationSummaryWidget(
     notifications: List<AppNotification>,
     onDismissNotification: (AppNotification) -> Unit,
     onNotificationClick: (appName: String, text: String, defaultPkg: String) -> Unit,
-    allowedCategories: Set<String> = setOf("Finance 💰", "Travel ✈️", "Social 💬", "Internet 🌐", "Entertainment 🎵", "Shopping 🛍️", "General 📦")
+    allowedCategories: Set<String> = setOf("Finance 💰", "Travel ✈️", "Social 💬", "Internet 🌐", "Entertainment 🎵", "Shopping 🛍️", "General 📦"),
+    contentColor: Color = Color.White
 ) {
     val activeNotifications = remember(notifications, allowedCategories) {
         notifications.filter {
@@ -178,7 +179,7 @@ fun NotificationSummaryWidget(
                     Spacer(modifier = Modifier.width(8.dp))
                     val count = activeNotifications.size
                     val titleText = if (count == 0) "No notifications · All clear!" else "$count Bundled Notification Summary"
-                    Text(titleText, fontSize = 11.sp, fontFamily = fontFamily, fontWeight = FontWeight.Bold, color = Color.White)
+                    Text(titleText, fontSize = 11.sp, fontFamily = fontFamily, fontWeight = FontWeight.Bold, color = contentColor)
                 }
                 if (activeNotifications.isNotEmpty()) {
                     Text(if (isExpanded) "Collapse" else "Expand", fontSize = 10.sp, color = primaryColor)
@@ -292,7 +293,7 @@ fun NotificationSummaryWidget(
                                             Text(
                                                 text = "${itemsInCategory.size}",
                                                 fontSize = 9.sp,
-                                                color = Color.White.copy(alpha = 0.8f),
+                                                color = contentColor.copy(alpha = 0.8f),
                                                 fontWeight = FontWeight.Bold
                                             )
                                         }
@@ -301,7 +302,7 @@ fun NotificationSummaryWidget(
                                     Text(
                                         text = "Dismiss All",
                                         fontSize = 9.sp,
-                                        color = Color.White.copy(alpha = 0.4f),
+                                        color = contentColor.copy(alpha = 0.4f),
                                         modifier = Modifier
                                             .clip(RoundedCornerShape(4.dp))
                                             .clickable {
@@ -349,7 +350,7 @@ fun NotificationSummaryWidget(
                                                     Text(
                                                         text = text,
                                                         fontSize = 10.sp,
-                                                        color = Color.White.copy(alpha = 0.7f),
+                                                        color = contentColor.copy(alpha = 0.7f),
                                                         maxLines = 2,
                                                         lineHeight = 12.sp
                                                     )
@@ -376,7 +377,8 @@ fun SwipeToDismissNotification(
     onDismiss: () -> Unit,
     onNotificationClick: () -> Unit,
     modifier: Modifier = Modifier,
-    onLongPress: (() -> Unit)? = null
+    onLongPress: (() -> Unit)? = null,
+    contentColor: Color = Color.White
 ) {
     val haptic = LocalHapticFeedback.current
     val density = LocalDensity.current

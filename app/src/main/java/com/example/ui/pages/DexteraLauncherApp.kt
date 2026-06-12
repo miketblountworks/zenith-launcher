@@ -178,8 +178,27 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
     val allowedNotificationCategoriesVal by activity.allowedNotificationCategories.collectAsState()
     
     val wallpaperLuminance by activity.wallpaperLuminance.collectAsState()
+
+    // === Adaptive text / UI colors based on wallpaper luminance ===
+    // If the background (wallpaper) is light, use dark text for readability.
+    // If dark, use light text. This makes the launcher text react to the background.
+    val isLightBackground = wallpaperLuminance > 0.52f
+    val adaptiveTextColor = if (isLightBackground) Color(0xFF1C1C1E) else Color.White
+    val adaptiveTextSecondary = if (isLightBackground) Color(0xFF3A3A3C) else Color.White.copy(alpha = 0.72f)
+    val adaptiveTextMuted = if (isLightBackground) Color(0xFF5C5C5E) else Color.White.copy(alpha = 0.55f)
+    val adaptiveIconTint = adaptiveTextColor
+
+    // Adaptive "glassmorphic" / frosted elements (chips, cards, search scrims)
+    val adaptiveGlassBg = if (isLightBackground) Color.Black.copy(alpha = 0.055f) else Color.White.copy(alpha = 0.12f)
+    val adaptiveGlassBorder = if (isLightBackground) Color.Black.copy(alpha = 0.11f) else Color.White.copy(alpha = 0.08f)
+
+    // Adaptive scrim: lighter touch on bright wallpapers so dark text remains readable without over-darkening the wallpaper
     val scrimAlpha by animateFloatAsState(
-        targetValue = 0.10f + (wallpaperLuminance * 0.08f),
+        targetValue = if (isLightBackground) {
+            0.022f + (wallpaperLuminance * 0.038f)
+        } else {
+            0.10f + (wallpaperLuminance * 0.08f)
+        },
         animationSpec = tween(600),
         label = "scrimAlpha"
     )
@@ -759,7 +778,8 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                             currentThemeColor,
                                             isLocationGrantedVal,
                                             use24HourFormatVal,
-                                            useFahrenheitVal
+                                            useFahrenheitVal,
+                                            contentColor = adaptiveTextColor
                                         )
                                     }
                                     
@@ -783,12 +803,12 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                             .clip(RoundedCornerShape(16.dp))
                                                             .background(
                                                                 if (isAllSelected) currentThemeColor.copy(alpha = 0.25f)
-                                                                else Color.White.copy(alpha = 0.12f)
+                                                                else adaptiveGlassBg
                                                             )
                                                             .border(
                                                                 1.dp,
                                                                 if (isAllSelected) currentThemeColor.copy(alpha = 0.5f)
-                                                                else Color.White.copy(alpha = 0.08f),
+                                                                else adaptiveGlassBorder,
                                                                 RoundedCornerShape(16.dp)
                                                             )
                                                             .clickable { selectedCategoryFilter = "All" }
@@ -800,14 +820,14 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                             Icon(
                                                                 Icons.Default.Menu, 
                                                                 contentDescription = null, 
-                                                                tint = if (isAllSelected) currentThemeColor else Color.White, 
+                                                                tint = if (isAllSelected) currentThemeColor else adaptiveIconTint, 
                                                                 modifier = Modifier.size(16.dp).padding(end = 6.dp)
                                                             )
                                                             Text(
                                                                 text = "All Apps",
                                                                 fontSize = 12.sp,
                                                                 fontFamily = currentFontFamily,
-                                                                color = if (isAllSelected) Color.White else Color.White.copy(alpha = 0.9f),
+                                                                color = if (isAllSelected) currentThemeColor else adaptiveTextColor,
                                                                 fontWeight = if (isAllSelected) FontWeight.Bold else FontWeight.Medium,
                                                                 style = TextStyle(
                                                                     shadow = Shadow(
@@ -836,12 +856,12 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                                 .clip(RoundedCornerShape(16.dp))
                                                                 .background(
                                                                     if (isSelected) currentThemeColor.copy(alpha = 0.25f)
-                                                                    else Color.White.copy(alpha = 0.12f)
+                                                                    else adaptiveGlassBg
                                                                 )
                                                                 .border(
                                                                     1.dp,
                                                                     if (isSelected) currentThemeColor.copy(alpha = 0.5f)
-                                                                    else Color.White.copy(alpha = 0.08f),
+                                                                    else adaptiveGlassBorder,
                                                                     RoundedCornerShape(16.dp)
                                                                 )
                                                                 .clickable { 
@@ -855,14 +875,14 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                                 Icon(
                                                                     iconVector, 
                                                                     contentDescription = null, 
-                                                                    tint = if (isSelected) currentThemeColor else Color.White, 
+                                                                    tint = if (isSelected) currentThemeColor else adaptiveIconTint, 
                                                                     modifier = Modifier.size(16.dp).padding(end = 6.dp)
                                                                 )
                                                                 Text(
                                                                     text = "$textLabel (${appsList.size})",
                                                                     fontSize = 12.sp,
                                                                     fontFamily = currentFontFamily,
-                                                                    color = if (isSelected) Color.White else Color.White.copy(alpha = 0.9f),
+                                                                    color = if (isSelected) currentThemeColor else adaptiveTextColor,
                                                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                                                     style = TextStyle(
                                                                         shadow = Shadow(
@@ -913,7 +933,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                 Box(
                                     modifier = Modifier
                                         .fillMaxSize()
-                                        .background(Color.White.copy(alpha = 0.08f))
+                                        .background(adaptiveGlassBg)
                                         .clickable(
                                             indication = null,
                                             interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
@@ -950,12 +970,12 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                         .clip(RoundedCornerShape(16.dp))
                                                         .background(
                                                             if (isSelected) currentThemeColor.copy(alpha = 0.25f)
-                                                            else Color.White.copy(alpha = 0.12f)
+                                                            else adaptiveGlassBg
                                                         )
                                                         .border(
                                                             1.dp,
                                                             if (isSelected) currentThemeColor.copy(alpha = 0.5f)
-                                                            else Color.White.copy(alpha = 0.08f),
+                                                            else adaptiveGlassBorder,
                                                             RoundedCornerShape(16.dp)
                                                         )
                                                         .clickable {
@@ -965,7 +985,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                 ) {
                                                     Text(
                                                         text = cat,
-                                                        color = if (isSelected) Color.White else Color.White.copy(alpha = 0.9f),
+                                                        color = if (isSelected) currentThemeColor else adaptiveTextColor,
                                                         fontSize = 12.sp,
                                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                                         fontFamily = currentFontFamily,
@@ -1003,7 +1023,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                     text = "Unified Search Engine",
                                                     fontSize = 18.sp,
                                                     fontWeight = FontWeight.Bold,
-                                                    color = Color.White,
+                                                    color = adaptiveTextColor,
                                                     fontFamily = currentFontFamily,
                                                     style = TextStyle(
                                                         shadow = Shadow(
@@ -1017,7 +1037,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                 Text(
                                                     text = "Type below to browse on-device contacts, installed apps, system settings, files, or query the web in real-time.",
                                                     fontSize = 13.sp,
-                                                    color = Color.White.copy(alpha = 0.82f),
+                                                    color = adaptiveTextSecondary,
                                                     textAlign = TextAlign.Center,
                                                     fontFamily = currentFontFamily,
                                                     modifier = Modifier.padding(horizontal = 24.dp),
@@ -1088,14 +1108,14 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                             Column(modifier = Modifier.weight(1f)) {
                                                                 Text(
                                                                     text = result.label,
-                                                                    color = Color.White,
+                                                                    color = adaptiveTextColor,
                                                                     fontSize = 14.sp,
                                                                     fontWeight = FontWeight.SemiBold,
                                                                     fontFamily = currentFontFamily
                                                                 )
                                                                 Text(
                                                                     text = "System Setting",
-                                                                    color = Color.White.copy(alpha = 0.5f),
+                                                                    color = adaptiveTextMuted,
                                                                     fontSize = 11.sp,
                                                                     fontFamily = currentFontFamily
                                                                 )
@@ -1125,7 +1145,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                             Column(modifier = Modifier.weight(1f)) {
                                                                 Text(
                                                                     text = result.label,
-                                                                    color = Color.White,
+                                                                    color = adaptiveTextColor,
                                                                     fontSize = 14.sp,
                                                                     fontWeight = FontWeight.SemiBold,
                                                                     fontFamily = currentFontFamily,
@@ -1135,7 +1155,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                                 val kbSize = result.size / 1024
                                                                 Text(
                                                                     text = "Local File • ${kbSize} KB • ${result.mimeType ?: "Unknown type"}",
-                                                                    color = Color.White.copy(alpha = 0.5f),
+                                                                    color = adaptiveTextMuted,
                                                                     fontSize = 11.sp,
                                                                     fontFamily = currentFontFamily
                                                                 )
@@ -1183,14 +1203,14 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                         Icon(
                                                             imageVector = Icons.Default.Search,
                                                             contentDescription = null,
-                                                            tint = Color.White.copy(alpha = 0.6f),
+                                                            tint = adaptiveTextColor.copy(alpha = 0.6f),
                                                             modifier = Modifier.size(16.dp)
                                                         )
                                                     }
                                                     Spacer(modifier = Modifier.width(14.dp))
                                                     Text(
                                                         text = result.label,
-                                                        color = Color.White.copy(alpha = 0.9f),
+                                                        color = adaptiveTextColor,
                                                         fontSize = 14.sp,
                                                         fontFamily = currentFontFamily,
                                                         modifier = Modifier.weight(1f)
@@ -1198,7 +1218,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                     Icon(
                                                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                                         contentDescription = null,
-                                                        tint = Color.White.copy(alpha = 0.3f),
+                                                        tint = adaptiveTextColor.copy(alpha = 0.3f),
                                                         modifier = Modifier
                                                             .size(14.dp)
                                                             .graphicsLayer { rotationZ = 135f }
@@ -1254,14 +1274,14 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                     Column(modifier = Modifier.weight(1f)) {
                                                         Text(
                                                             text = result.label,
-                                                            color = Color.White,
+                                                            color = adaptiveTextColor,
                                                             fontSize = 14.sp,
                                                             fontWeight = FontWeight.SemiBold,
                                                             fontFamily = currentFontFamily
                                                         )
                                                         Text(
                                                             text = "App • ${result.packageName}",
-                                                            color = Color.White.copy(alpha = 0.5f),
+                                                            color = adaptiveTextMuted,
                                                             fontSize = 11.sp,
                                                             fontFamily = currentFontFamily,
                                                             maxLines = 1,
@@ -1325,14 +1345,14 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                     Column(modifier = Modifier.weight(1f)) {
                                                         Text(
                                                             text = result.label,
-                                                            color = Color.White,
+                                                            color = adaptiveTextColor,
                                                             fontSize = 14.sp,
                                                             fontWeight = FontWeight.SemiBold,
                                                             fontFamily = currentFontFamily
                                                         )
                                                         Text(
                                                             text = "Contact • ${result.phoneNumber}",
-                                                            color = Color.White.copy(alpha = 0.5f),
+                                                            color = adaptiveTextMuted,
                                                             fontSize = 11.sp,
                                                             fontFamily = currentFontFamily
                                                         )
@@ -1477,7 +1497,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                                 fontSize = 10.sp,
                                                                 fontWeight = FontWeight.Bold,
                                                                 fontFamily = currentFontFamily,
-                                                                color = currentThemeColor.copy(alpha = 0.7f),
+                                                                color = if (isLightBackground) currentThemeColor.copy(alpha = 0.85f) else currentThemeColor.copy(alpha = 0.7f),
                                                                 letterSpacing = 1.sp
                                                             )
                                                         }
@@ -1511,6 +1531,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                             currentFontFamily = currentFontFamily,
                                                             iconPackVal = iconPackVal,
                                                             iconThemeColor = iconThemeColor,
+                                                            contentColor = adaptiveTextColor,
                                                             onLongPress = { focusedContextMenuApp = app },
                                                             onTap = {
                                                                 val isLimited = app.packageName in limitedAppsSet
@@ -1546,7 +1567,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                                     fontSize = 9.sp,
                                                                     fontWeight = FontWeight.Normal,
                                                                     fontFamily = currentFontFamily,
-                                                                    color = Color.White.copy(alpha = 0.25f),
+                                                                    color = adaptiveTextColor.copy(alpha = 0.25f),
                                                                     modifier = Modifier.padding(horizontal = 16.dp),
                                                                     letterSpacing = 1.sp
                                                                 )
@@ -1609,6 +1630,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                                 currentFontFamily = currentFontFamily,
                                                                 iconPackVal = iconPackVal,
                                                                 iconThemeColor = iconThemeColor,
+                                                                contentColor = adaptiveTextColor,
                                                                 onLongPress = { focusedContextMenuApp = app },
                                                                 onTap = {
                                                                     val isLimited = app.packageName in limitedAppsSet
@@ -1671,6 +1693,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                                 currentFontFamily = currentFontFamily,
                                                                 iconPackVal = iconPackVal,
                                                                 iconThemeColor = iconThemeColor,
+                                                                contentColor = adaptiveTextColor,
                                                                 onLongPress = { focusedContextMenuApp = app },
                                                                 onTap = {
                                                                     val isLimited = app.packageName in limitedAppsSet
@@ -1742,7 +1765,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                                 blurRadius = 4f
                                                             )
                                                         ),
-                                                        color = Color.White,
+                                                        color = adaptiveTextColor,
                                                         fontWeight = FontWeight.Bold,
                                                         modifier = Modifier.padding(vertical = 4.dp)
                                                     )
@@ -1761,7 +1784,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                 displayedPages.forEachIndexed { idx, _ ->
                                                     val isSelected = idx == currentPageIndex
                                                     val dotWidth by animateDpAsState(targetValue = if (isSelected) 16.dp else 6.dp, label = "dot_width")
-                                                    val dotColor = if (isSelected) currentThemeColor else Color.White
+                                                    val dotColor = if (isSelected) currentThemeColor else adaptiveTextColor
                                                     Box(
                                                         modifier = Modifier
                                                             .padding(horizontal = 4.dp)
@@ -1824,6 +1847,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                                     activity.launchAppWithTracker(foundApp.packageName)
                                                                 }
                                                             },
+                                                            contentColor = adaptiveTextColor,
                                                             modifier = Modifier.fillMaxSize().background(Color.Transparent)
                                                         )
                                                     } else if (targetPageName == "App List") {
@@ -2112,7 +2136,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                 text = "Settings", 
                                 fontSize = 11.sp, 
                                 fontFamily = currentFontFamily, 
-                                color = Color.White,
+                                color = adaptiveTextColor,
                                 maxLines = 1
                             )
                         }
@@ -2148,7 +2172,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                 text = "Wallpaper", 
                                 fontSize = 11.sp, 
                                 fontFamily = currentFontFamily, 
-                                color = Color.White,
+                                color = adaptiveTextColor,
                                 maxLines = 1
                             )
                         }
