@@ -1845,16 +1845,6 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                             activity = activity,
                                                             allowedCategories = allowedNotificationCategoriesVal,
                                                             onLongPressApp = { packageAppInfo -> focusedContextMenuApp = packageAppInfo },
-                                                            onNotificationClick = { appName, _, defaultPkg ->
-                                                                val foundApp = uiState.apps.firstOrNull { 
-                                                                    it.label.equals(appName, ignoreCase = true) || 
-                                                                    it.packageName.equals(defaultPkg, ignoreCase = true) ||
-                                                                    it.packageName.contains(appName, ignoreCase = true) 
-                                                                }
-                                                                if (foundApp != null) {
-                                                                    activity.launchAppWithTracker(foundApp.packageName)
-                                                                }
-                                                            },
                                                             contentColor = adaptiveTextColor,
                                                             modifier = Modifier.fillMaxSize().background(Color.Transparent)
                                                         )

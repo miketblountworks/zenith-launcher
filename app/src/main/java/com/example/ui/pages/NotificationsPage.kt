@@ -98,7 +98,6 @@ fun NotificationsPage(
     allowedCategories: Set<String>,
     modifier: Modifier = Modifier,
     onLongPressApp: ((AppInfo) -> Unit)? = null,
-    onNotificationClick: (appName: String, text: String, defaultPkg: String) -> Unit,
     contentColor: Color = Color.White
 ) {
     val haptic = LocalHapticFeedback.current
@@ -120,14 +119,13 @@ fun NotificationsPage(
     }
 
     Box(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = 8.dp, vertical = 16.dp)
+        modifier = modifier.fillMaxSize()
     ) {
-        // Main Content - Transparent
+        // Main Container - Transparent
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(horizontal = 8.dp, vertical = 16.dp)
         ) {
             Column(
                 modifier = Modifier
@@ -271,8 +269,7 @@ fun NotificationsPage(
                                         activity.notificationList.value = currentList
                                     },
                                     onNotificationClick = {
-                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        onNotificationClick(item.appName, item.text, item.pkg)
+                                        expandedNotification = item
                                     },
                                     onExpand = { expandedNotification = item },
                                     onLongPress = {
@@ -304,7 +301,10 @@ fun NotificationsPage(
                                             fontFamily = fontFamily,
                                             activity = activity,
                                             onLongPressApp = onLongPressApp,
-                                            onNotificationClick = onNotificationClick,
+                                            onNotificationClick = { _, _, _ ->
+                                                // Grouped click also triggers expansion of top item
+                                                expandedNotification = groupList.first()
+                                            },
                                             onExpandedClick = { expandedGroups[pkg] = true },
                                             onExpand = { expandedNotification = it }
                                         )
@@ -363,8 +363,7 @@ fun NotificationsPage(
                                                             activity.notificationList.value = currentList
                                                         },
                                                         onNotificationClick = {
-                                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                                            onNotificationClick(item.appName, item.text, item.pkg)
+                                                            expandedNotification = item
                                                         },
                                                         onExpand = { expandedNotification = item },
                                                         onLongPress = {
@@ -398,7 +397,7 @@ fun NotificationsPage(
             }
         }
 
-        // Expanded Notification Popup Overlay
+        // 2. Expanded Notification Popup Overlay
         BackHandler(enabled = expandedNotification != null) {
             expandedNotification = null
         }

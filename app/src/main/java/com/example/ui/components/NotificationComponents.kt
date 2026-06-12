@@ -341,7 +341,7 @@ fun GroupedNotificationStack(
                     onNotificationClick = {
                         if (isTopCard) {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            onExpandedClick(pkg)
+                            onNotificationClick(item.appName, item.text, item.pkg)
                         }
                     },
                     onExpand = { onExpand(item) },
@@ -538,48 +538,7 @@ fun NotificationItemCard(
                             onTap = {
                                 if (offsetX.value == 0f) {
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    val sbn = item.sbn
-                                    val fallbackLaunch = {
-                                        try {
-                                            val targetPkg = sbn?.packageName ?: item.pkg
-                                            val fallbackIntent = context.packageManager.getLaunchIntentForPackage(targetPkg)
-                                            if (fallbackIntent != null) {
-                                                fallbackIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                                context.startActivity(fallbackIntent)
-                                            }
-                                        } catch (ex: Exception) {
-                                            ex.printStackTrace()
-                                        }
-                                    }
-
-                                    if (sbn != null) {
-                                        val contentIntent = sbn.notification.contentIntent
-                                        if (contentIntent != null) {
-                                            try {
-                                                val options = if (Build.VERSION.SDK_INT >= 34) {
-                                                    ActivityOptions.makeBasic().apply {
-                                                        setPendingIntentBackgroundActivityStartMode(ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED)
-                                                    }
-                                                } else {
-                                                    ActivityOptions.makeBasic()
-                                                }
-                                                contentIntent.send(context, 0, null, null, null, null, options.toBundle())
-                                            } catch (e: Exception) {
-                                                e.printStackTrace()
-                                                fallbackLaunch()
-                                            }
-                                        } else {
-                                            fallbackLaunch()
-                                        }
-
-                                        val isAutoCancel = (sbn.notification.flags and Notification.FLAG_AUTO_CANCEL) != 0
-                                        if (isAutoCancel) {
-                                            MyNotificationListenerService.instance?.cancelNotification(item.key)
-                                            onDismiss?.invoke()
-                                        }
-                                    } else {
-                                        onNotificationClick()
-                                    }
+                                    onNotificationClick()
                                 }
                             }
                         )

@@ -138,7 +138,8 @@ fun MusicPage(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            // 1. Artwork with Integrated Metadata Overlay & Gesture Controls
+            // 1. Artwork with Integrated Metadata Overlay & Gated Gesture Controls
+            var hasToggled by remember { mutableStateOf(false) }
             Box(
                 modifier = Modifier
                     .fillMaxWidth(0.95f)
@@ -146,17 +147,19 @@ fun MusicPage(
                     .graphicsLayer { scaleX = artworkScale.value; scaleY = artworkScale.value }
                     .pointerInput(Unit) {
                         detectVerticalDragGestures(
-                            onDragEnd = { /* Reset animations if needed */ }
+                            onDragStart = { hasToggled = false },
+                            onDragEnd = { hasToggled = false },
+                            onDragCancel = { hasToggled = false }
                         ) { change, dragAmount ->
                             change.consume()
-                            // Swiping down (dragAmount > 0) toggles Play/Pause
-                            if (dragAmount > 35f) {
+                            if (dragAmount > 30f && !hasToggled) {
                                 MediaController.dispatchMediaKey(activity, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 coroutineScope.launch {
                                     artworkScale.animateTo(0.95f, tween(100))
                                     artworkScale.animateTo(1.0f, spring(dampingRatio = Spring.DampingRatioMediumBouncy))
                                 }
+                                hasToggled = true
                             }
                         }
                     }
@@ -165,6 +168,7 @@ fun MusicPage(
                         var triggered = false
                         detectHorizontalDragGestures(
                             onDragStart = { totalDragX = 0f; triggered = false },
+                            onDragEnd = { totalDragX = 0f; triggered = false },
                             onHorizontalDrag = { change, dragAmount ->
                                 change.consume()
                                 if (!triggered) {
@@ -198,14 +202,12 @@ fun MusicPage(
                             }
                         }
                         
-                        // Metadata Overlay Scrim
                         Box(
                             modifier = Modifier.fillMaxSize().background(
                                 Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(0.75f)), startY = 200f)
                             )
                         )
                         
-                        // Metadata Text Overlay
                         Column(
                             modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp, start = 16.dp, end = 16.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
@@ -225,7 +227,7 @@ fun MusicPage(
                 }
             }
 
-            // 2. Volume Bar (Mockup Style)
+            // 2. Volume Control
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -248,41 +250,51 @@ fun MusicPage(
                         thumbColor = Color.White,
                         activeTrackColor = themeColor,
                         inactiveTrackColor = Color.White.copy(alpha = 0.15f)
-                    ),
-                    thumb = { Box(modifier = Modifier.size(10.dp).background(Color.White, CircleShape)) }
+                    )
                 )
             }
 
-            // 3. Thick Pill Seek Bar (Mockup Style)
-            val progressFrac = if (trackInfo.durationMs > 0) realProgressMs.toFloat() / trackInfo.durationMs else 0.45f
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(0.95f)
-                    .height(36.dp)
-                    .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.12f))
-                    .clickable { /* Future seek interaction */ },
-                contentAlignment = Alignment.CenterStart
+            // 3. Time Duration Text
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(progressFrac)
-                        .fillMaxHeight()
-                        .background(Brush.horizontalGradient(listOf(themeColor, themeColor.copy(alpha = 0.8f))))
+                val formatMs: (Long) -> String = { ms -> 
+                    val seconds = (ms / 1000) % 60
+                    val minutes = (ms / (1000 * 60)) % 60
+                    String.format(Locale.getDefault(), "%d:%02d", minutes, seconds) 
+                }
+                Text(
+                    text = formatMs(realProgressMs),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontFamily = fontFamily
+                )
+                Text(
+                    text = formatMs(trackInfo.durationMs),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontFamily = fontFamily
                 )
             }
 
-            // 4. Timestamps
-            Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    val formatMs: (Long) -> String = { ms -> String.format(Locale.getDefault(), "%d:%02d", ms/60000, (ms%60000)/1000) }
-                    Text(formatMs(realProgressMs), fontSize = 12.sp, color = contentColor.copy(alpha = 0.9f), fontWeight = FontWeight.Bold, fontFamily = fontFamily)
-                    Text(formatMs(trackInfo.durationMs), fontSize = 12.sp, color = contentColor.copy(alpha = 0.9f), fontWeight = FontWeight.Bold, fontFamily = fontFamily)
-                }
-            }
+            // 4. Playback Seek Bar
+            var sliderValue by remember(realProgressMs) { mutableFloatStateOf(realProgressMs.toFloat()) }
+            Slider(
+                value = sliderValue,
+                onValueChange = { sliderValue = it },
+                onValueChangeFinished = {
+                    activeController?.transportControls?.seekTo(sliderValue.toLong())
+                },
+                valueRange = 0f..(trackInfo.durationMs.toFloat().coerceAtLeast(1f)),
+                modifier = Modifier.fillMaxWidth(0.9f),
+                colors = SliderDefaults.colors(
+                    thumbColor = Color.White,
+                    activeTrackColor = themeColor,
+                    inactiveTrackColor = Color.White.copy(alpha = 0.15f)
+                )
+            )
         }
     }
 }
