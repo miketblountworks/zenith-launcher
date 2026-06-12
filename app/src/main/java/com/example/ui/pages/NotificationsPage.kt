@@ -10,6 +10,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -37,7 +38,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -93,7 +96,7 @@ fun NotificationsPage(
             .fillMaxSize()
             .padding(horizontal = 8.dp, vertical = 16.dp)
     ) {
-        // Main Container - Now Transparent
+        // Main Container - Transparent
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -184,10 +187,24 @@ fun NotificationsPage(
                     }
 
                     val listSize = groupedNotifications.size
-                    val listState = rememberLazyListState()
+                    val listState = rememberLazyListState(initialFirstVisibleItemIndex = if (listSize > 0) (Int.MAX_VALUE / 2) - (Int.MAX_VALUE / 2 % listSize) else 0)
+                    val snapFlingBehavior = rememberSnapFlingBehavior(lazyListState = listState)
+                    
+                    var previousCycle by remember { mutableIntStateOf(if (listSize > 0) listState.firstVisibleItemIndex / listSize else 0) }
+
+                    LaunchedEffect(listState.firstVisibleItemIndex) {
+                        if (listSize > 0) {
+                            val currentCycle = listState.firstVisibleItemIndex / listSize
+                            if (currentCycle != previousCycle) {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                previousCycle = currentCycle
+                            }
+                        }
+                    }
 
                     LazyColumn(
                         state = listState,
+                        flingBehavior = snapFlingBehavior,
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxWidth()
@@ -209,8 +226,8 @@ fun NotificationsPage(
                         contentPadding = PaddingValues(top = 32.dp, bottom = 24.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        items(count = listSize) { index ->
-                            val (pkg, groupList) = groupedNotifications[index]
+                        items(count = if (listSize > 0) Int.MAX_VALUE else 0) { index ->
+                            val (pkg, groupList) = groupedNotifications[index % listSize]
                             if (groupList.size == 1) {
                                 val item = groupList[0]
                                 SwipeToDismissNotification(
