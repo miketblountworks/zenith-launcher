@@ -122,16 +122,12 @@ fun MusicPage(
     val coroutineScope = rememberCoroutineScope()
     val artworkScale = remember { Animatable(1f) }
     val context = LocalContext.current
-    val audioManager = remember(context) { context.getSystemService(android.content.Context.AUDIO_SERVICE) as android.media.AudioManager }
+    val audioManager = remember { context.getSystemService(android.content.Context.AUDIO_SERVICE) as android.media.AudioManager }
     val activeController = MyNotificationListenerService.activeController
-    val playbackInfo = activeController?.playbackInfo
 
-    val maxVolume = playbackInfo?.maxVolume ?: audioManager.getStreamMaxVolume(android.media.AudioManager.STREAM_MUSIC)
-    var currentVolume by remember(playbackInfo?.currentVolume) {
-        mutableIntStateOf(playbackInfo?.currentVolume ?: audioManager.getStreamVolume(android.media.AudioManager.STREAM_MUSIC))
-    }
-    val maxVolFloat = if (maxVolume <= 0) 15f else maxVolume.toFloat()
-    val coercedVolume = currentVolume.toFloat().coerceIn(0f, maxVolFloat)
+    val maxVolume = remember { audioManager.getStreamMaxVolume(android.media.AudioManager.STREAM_MUSIC) }
+    val currentSystemVolume = remember { audioManager.getStreamVolume(android.media.AudioManager.STREAM_MUSIC) }
+    var sliderPosition by remember { mutableFloatStateOf(currentSystemVolume.toFloat() / maxVolume.toFloat().coerceAtLeast(1f)) }
 
     Box(
         modifier = modifier.fillMaxSize().padding(bottom = 120.dp).clickable(
@@ -322,16 +318,13 @@ fun MusicPage(
                 Icon(Icons.AutoMirrored.Filled.VolumeUp, null, tint = Color.White.copy(alpha = 0.5f), modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(12.dp))
                 Slider(
-                    value = coercedVolume,
+                    value = sliderPosition,
                     onValueChange = { newValue ->
-                        currentVolume = newValue.roundToInt()
-                        if (activeController != null && playbackInfo != null) {
-                            try { activeController.setVolumeTo(currentVolume, 0) } catch (_: Exception) {}
-                        } else {
-                            audioManager.setStreamVolume(android.media.AudioManager.STREAM_MUSIC, currentVolume, 0)
-                        }
+                        sliderPosition = newValue
+                        val hardwareVolume = (newValue * maxVolume).roundToInt()
+                        audioManager.setStreamVolume(android.media.AudioManager.STREAM_MUSIC, hardwareVolume, 0)
                     },
-                    valueRange = 0f..maxVolFloat,
+                    valueRange = 0f..1f,
                     modifier = Modifier.weight(1f).height(32.dp),
                     colors = SliderDefaults.colors(
                         thumbColor = Color.White,
