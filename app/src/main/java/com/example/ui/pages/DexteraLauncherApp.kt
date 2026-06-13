@@ -999,7 +999,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                             drawRect(
                                                 brush = androidx.compose.ui.graphics.Brush.verticalGradient(
                                                     0.0f to androidx.compose.ui.graphics.Color.Transparent,
-                                                    0.05f to androidx.compose.ui.graphics.Color.Black,
+                                                    0.25f to androidx.compose.ui.graphics.Color.Black,
                                                     0.95f to androidx.compose.ui.graphics.Color.Black,
                                                     1.0f to androidx.compose.ui.graphics.Color.Transparent
                                                 ),
