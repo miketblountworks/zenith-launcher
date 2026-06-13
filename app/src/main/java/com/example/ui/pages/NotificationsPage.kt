@@ -38,6 +38,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -222,28 +223,14 @@ fun NotificationsPage(
                         groups.toList()
                     }
 
-                    val listSize = groupedNotifications.size
-                    val listState = rememberLazyListState(initialFirstVisibleItemIndex = if (listSize > 0) (Int.MAX_VALUE / 2) - (Int.MAX_VALUE / 2 % listSize) else 0)
+                    val listState = rememberLazyListState()
                     val snapFlingBehavior = rememberSnapFlingBehavior(lazyListState = listState)
                     
-                    var previousCycle by remember { mutableIntStateOf(if (listSize > 0) listState.firstVisibleItemIndex / listSize else 0) }
-
-                    LaunchedEffect(listState.firstVisibleItemIndex) {
-                        if (listSize > 0) {
-                            val currentCycle = listState.firstVisibleItemIndex / listSize
-                            if (currentCycle != previousCycle) {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                previousCycle = currentCycle
-                            }
-                        }
-                    }
-
                     LazyColumn(
                         state = listState,
                         flingBehavior = snapFlingBehavior,
                         modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth()
+                            .fillMaxSize()
                             .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
                             .drawWithContent {
                                 drawContent()
@@ -259,11 +246,10 @@ fun NotificationsPage(
                                     blendMode = androidx.compose.ui.graphics.BlendMode.DstIn
                                 )
                             },
-                        contentPadding = PaddingValues(top = 32.dp, bottom = 120.dp),
+                        contentPadding = PaddingValues(top = 32.dp, bottom = 140.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        items(count = if (listSize > 0) Int.MAX_VALUE else 0) { index ->
-                            val (pkg, groupList) = groupedNotifications[index % listSize]
+                        items(groupedNotifications, key = { it.first }) { (pkg, groupList) ->
                             if (groupList.size == 1) {
                                 val item = groupList[0]
                                 SwipeToDismissNotification(

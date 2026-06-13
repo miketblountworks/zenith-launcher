@@ -205,7 +205,7 @@ class MyNotificationListenerService : NotificationListenerService() {
         try {
             updateActiveMedia()
             val active = activeNotifications ?: return
-            val list = active.mapNotNull { sbn ->
+            val list = active.distinctBy { it.key }.mapNotNull { sbn ->
                 if (sbn == null) return@mapNotNull null
                 val pkg = sbn.packageName ?: ""
                 if (pkg == "com.android.systemui") return@mapNotNull null
