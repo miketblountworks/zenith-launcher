@@ -926,20 +926,26 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                 .fillMaxWidth()
                         ) {
                             if (searchQuery.isNotEmpty() || isSearchFocused) {
-                                val virtualSize = displayedResults.size + 1
-                                val searchListState = rememberLazyListState(
-                                    initialFirstVisibleItemIndex = (Int.MAX_VALUE / 2) - ((Int.MAX_VALUE / 2) % virtualSize)
-                                )
+                                val isInfiniteScroll = displayedResults.size > 5
+                                val virtualSize = if (isInfiniteScroll) displayedResults.size + 1 else displayedResults.size
+                                val initialIndex = if (isInfiniteScroll) {
+                                    (Int.MAX_VALUE / 2) - ((Int.MAX_VALUE / 2) % virtualSize)
+                                } else {
+                                    0
+                                }
+                                val searchListState = rememberLazyListState(initialFirstVisibleItemIndex = initialIndex)
                                 val searchFocusManager = LocalFocusManager.current
                                 val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
-                                var lastLoop by remember { mutableIntStateOf((Int.MAX_VALUE / 2) / virtualSize) }
+                                var lastLoop by remember { mutableIntStateOf(if (isInfiniteScroll) (Int.MAX_VALUE / 2) / virtualSize else 0) }
 
-                                LaunchedEffect(searchListState) {
-                                    snapshotFlow { searchListState.firstVisibleItemIndex }.collect { index ->
-                                        val currentLoop = index / virtualSize
-                                        if (currentLoop != lastLoop) {
-                                            haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                                            lastLoop = currentLoop
+                                LaunchedEffect(searchListState, isInfiniteScroll) {
+                                    if (isInfiniteScroll) {
+                                        snapshotFlow { searchListState.firstVisibleItemIndex }.collect { index ->
+                                            val currentLoop = index / virtualSize
+                                            if (currentLoop != lastLoop) {
+                                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                                lastLoop = currentLoop
+                                            }
                                         }
                                     }
                                 }
@@ -1041,18 +1047,22 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                             }
                                         }
                                     } else {
-                                        val virtualSize = displayedResults.size + 1
                                         if (displayedResults.isNotEmpty()) {
                                             items(
-                                                count = Int.MAX_VALUE,
+                                                count = if (isInfiniteScroll) Int.MAX_VALUE else displayedResults.size,
                                                 key = { index ->
-                                                    val actualIndex = index % virtualSize
-                                                    if (actualIndex == displayedResults.size) "spacer_$index"
-                                                    else "${displayedResults[actualIndex].id}_$index"
+                                                    if (isInfiniteScroll) {
+                                                        val actualIndex = index % virtualSize
+                                                        if (actualIndex == displayedResults.size) "spacer_$index"
+                                                        else "${displayedResults[actualIndex].id}_$index"
+                                                    } else {
+                                                        "${displayedResults[index].id}_$index"
+                                                    }
                                                 }
                                             ) { index ->
-                                                val actualIndex = index % virtualSize
-                                                if (actualIndex == displayedResults.size) {
+                                                val actualIndex = if (isInfiniteScroll) index % virtualSize else index
+                                                
+                                                if (isInfiniteScroll && actualIndex == displayedResults.size) {
                                                     Spacer(modifier = Modifier.height(80.dp))
                                                 } else {
                                                     val result = displayedResults[actualIndex]
