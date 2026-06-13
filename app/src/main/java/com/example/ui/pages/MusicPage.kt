@@ -99,6 +99,12 @@ fun MusicPage(
         return
     }
 
+    val formatMs: (Long) -> String = { ms ->
+        val seconds = (ms / 1000) % 60
+        val minutes = (ms / (1000 * 60)) % 60
+        String.format(Locale.getDefault(), "%d:%02d", minutes, seconds)
+    }
+
     val isPlaying = trackInfo.isPlaying
     var realProgressMs by remember(trackInfo.title, trackInfo.isPlaying) { mutableLongStateOf(trackInfo.progressMs) }
     
@@ -212,9 +218,16 @@ fun MusicPage(
                     }
             ) {
                 Card(
-                    modifier = Modifier.fillMaxSize().shadow(12.dp, RoundedCornerShape(32.dp)),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .shadow(
+                            elevation = 20.dp,
+                            shape = RoundedCornerShape(32.dp),
+                            ambientColor = Color.Black,
+                            spotColor = Color.Black.copy(alpha = 0.5f)
+                        ),
                     shape = RoundedCornerShape(32.dp),
-                    elevation = CardDefaults.cardElevation(8.dp)
+                    elevation = CardDefaults.cardElevation(defaultElevation = 16.dp)
                 ) {
                     Box(modifier = Modifier.fillMaxSize()) {
                         if (trackInfo.artwork != null) {
@@ -230,6 +243,55 @@ fun MusicPage(
                                 Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(0.75f)), startY = 200f)
                             )
                         )
+
+                        // 1. Timestamp Overlay (Top-Left)
+                        Text(
+                            text = "${formatMs(realProgressMs)} / ${formatMs(trackInfo.durationMs)}",
+                            modifier = Modifier.align(Alignment.TopStart).padding(16.dp),
+                            color = Color.White,
+                            style = MaterialTheme.typography.labelMedium.copy(
+                                shadow = Shadow(color = Color.Black.copy(alpha = 0.8f), offset = Offset(2f, 2f), blurRadius = 4f)
+                            )
+                        )
+
+                        // 2. Simulated Visualizer (Top-Right)
+                        Row(
+                            modifier = Modifier.align(Alignment.TopEnd).padding(16.dp).height(16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.Bottom
+                        ) {
+                            val infiniteTransition = rememberInfiniteTransition(label = "visualizer")
+                            
+                            repeat(3) { index ->
+                                val heightScale by if (isPlaying) {
+                                    infiniteTransition.animateFloat(
+                                        initialValue = 0.3f,
+                                        targetValue = 1f,
+                                        animationSpec = infiniteRepeatable(
+                                            animation = tween(
+                                                durationMillis = when(index) {
+                                                    0 -> 450
+                                                    1 -> 300
+                                                    else -> 600
+                                                },
+                                                easing = FastOutSlowInEasing
+                                            ),
+                                            repeatMode = RepeatMode.Reverse
+                                        ),
+                                        label = "bar_$index"
+                                    )
+                                } else {
+                                    remember { mutableStateOf(0.3f) }
+                                }
+                                
+                                Box(
+                                    modifier = Modifier
+                                        .width(3.dp)
+                                        .fillMaxHeight(heightScale)
+                                        .background(Color.White.copy(alpha = 0.8f), RoundedCornerShape(1.dp))
+                                )
+                            }
+                        }
                         
                         Column(
                             modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp, start = 16.dp, end = 16.dp),
@@ -279,17 +341,11 @@ fun MusicPage(
                 )
             }
 
-            // 3. Time Duration Text
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                val formatMs: (Long) -> String = { ms -> 
-                    val seconds = (ms / 1000) % 60
-                    val minutes = (ms / (1000 * 60)) % 60
-                    String.format(Locale.getDefault(), "%d:%02d", minutes, seconds) 
-                }
                 Text(
                     text = formatMs(realProgressMs),
                     style = MaterialTheme.typography.labelMedium.copy(shadow = textShadow),
