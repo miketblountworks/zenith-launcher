@@ -48,6 +48,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -781,7 +782,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                         enter = fadeIn() + expandVertically(),
                                         exit = fadeOut() + shrinkVertically()
                                     ) {
-                                        Box(modifier = clickToCollapseModifier) {
+                                        Box(modifier = clickToCollapseModifier.statusBarsPadding()) {
                                             androidx.compose.foundation.lazy.LazyRow(
                                                 modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
                                                 horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -945,7 +946,10 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                         .padding(horizontal = 14.dp),
                                     verticalArrangement = Arrangement.Bottom,
                                     reverseLayout = true,
-                                    contentPadding = PaddingValues(top = 16.dp, bottom = 120.dp)
+                                    contentPadding = PaddingValues(
+                                        top = 16.dp, 
+                                        bottom = 140.dp + WindowInsets.ime.getBottom(density).let { with(density) { it.toDp() } }
+                                    )
                                 ) {
                                     // CATEGORY FILTER CHIPS
                                     item {
@@ -1016,29 +1020,29 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                     text = "Unified Search Engine",
                                                     fontSize = 18.sp,
                                                     fontWeight = FontWeight.Bold,
-                                                    color = adaptiveTextColor,
+                                                    color = Color.White,
                                                     fontFamily = currentFontFamily,
                                                     style = TextStyle(
                                                         shadow = Shadow(
-                                                            color = Color.Black.copy(alpha = 0.5f),
-                                                            offset = Offset(1.5f, 1.5f),
-                                                            blurRadius = 4f
+                                                            color = Color.Black.copy(alpha = 0.6f),
+                                                            offset = Offset(2f, 2f),
+                                                            blurRadius = 6f
                                                         )
                                                     )
                                                 )
                                                 Spacer(modifier = Modifier.height(6.dp))
                                                 Text(
                                                     text = "Type below to browse on-device contacts, installed apps, system settings, files, or query the web in real-time.",
-                                                    fontSize = 13.sp,
-                                                    color = adaptiveTextSecondary,
+                                                    fontSize = 14.sp,
+                                                    color = Color.White.copy(alpha = 0.8f),
                                                     textAlign = TextAlign.Center,
                                                     fontFamily = currentFontFamily,
                                                     modifier = Modifier.padding(horizontal = 24.dp),
                                                     style = TextStyle(
                                                         shadow = Shadow(
-                                                            color = Color.Black.copy(alpha = 0.5f),
+                                                            color = Color.Black.copy(alpha = 0.6f),
                                                             offset = Offset(1f, 1f),
-                                                            blurRadius = 3f
+                                                            blurRadius = 4f
                                                         )
                                                     )
                                                 )
@@ -1101,10 +1105,17 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                             Column(modifier = Modifier.weight(1f)) {
                                                                 Text(
                                                                     text = result.label,
-                                                                    color = adaptiveTextColor,
-                                                                    fontSize = 14.sp,
+                                                                    color = Color.White,
+                                                                    fontSize = 18.sp,
                                                                     fontWeight = FontWeight.SemiBold,
-                                                                    fontFamily = currentFontFamily
+                                                                    fontFamily = currentFontFamily,
+                                                                    style = TextStyle(
+                                                                        shadow = Shadow(
+                                                                            color = Color.Black.copy(alpha = 0.6f),
+                                                                            offset = Offset(2f, 2f),
+                                                                            blurRadius = 6f
+                                                                        )
+                                                                    )
                                                                 )
                                                                 Text(
                                                                     text = "System Setting",
@@ -1138,12 +1149,19 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                             Column(modifier = Modifier.weight(1f)) {
                                                                 Text(
                                                                     text = result.label,
-                                                                    color = adaptiveTextColor,
-                                                                    fontSize = 14.sp,
+                                                                    color = Color.White,
+                                                                    fontSize = 18.sp,
                                                                     fontWeight = FontWeight.SemiBold,
                                                                     fontFamily = currentFontFamily,
                                                                     maxLines = 1,
-                                                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                                                    style = TextStyle(
+                                                                        shadow = Shadow(
+                                                                            color = Color.Black.copy(alpha = 0.6f),
+                                                                            offset = Offset(2f, 2f),
+                                                                            blurRadius = 6f
+                                                                        )
+                                                                    )
                                                                 )
                                                                 val kbSize = result.size / 1024
                                                                 Text(
@@ -1203,15 +1221,22 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                     Spacer(modifier = Modifier.width(14.dp))
                                                     Text(
                                                         text = result.label,
-                                                        color = adaptiveTextColor,
-                                                        fontSize = 14.sp,
+                                                        color = Color.White,
+                                                        fontSize = 18.sp,
                                                         fontFamily = currentFontFamily,
-                                                        modifier = Modifier.weight(1f)
+                                                        modifier = Modifier.weight(1f),
+                                                        style = TextStyle(
+                                                            shadow = Shadow(
+                                                                color = Color.Black.copy(alpha = 0.6f),
+                                                                offset = Offset(2f, 2f),
+                                                                blurRadius = 6f
+                                                            )
+                                                        )
                                                     )
                                                     Icon(
                                                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                                         contentDescription = null,
-                                                        tint = adaptiveTextColor.copy(alpha = 0.3f),
+                                                        tint = Color.White.copy(alpha = 0.6f),
                                                         modifier = Modifier
                                                             .size(14.dp)
                                                             .graphicsLayer { rotationZ = 135f }
@@ -1267,10 +1292,17 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                     Column(modifier = Modifier.weight(1f)) {
                                                         Text(
                                                             text = result.label,
-                                                            color = adaptiveTextColor,
-                                                            fontSize = 14.sp,
+                                                            color = Color.White,
+                                                            fontSize = 18.sp,
                                                             fontWeight = FontWeight.SemiBold,
-                                                            fontFamily = currentFontFamily
+                                                            fontFamily = currentFontFamily,
+                                                            style = TextStyle(
+                                                                shadow = Shadow(
+                                                                    color = Color.Black.copy(alpha = 0.6f),
+                                                                    offset = Offset(2f, 2f),
+                                                                    blurRadius = 6f
+                                                                )
+                                                            )
                                                         )
                                                         Text(
                                                             text = "App • ${result.packageName}",
@@ -1338,10 +1370,17 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                     Column(modifier = Modifier.weight(1f)) {
                                                         Text(
                                                             text = result.label,
-                                                            color = adaptiveTextColor,
-                                                            fontSize = 14.sp,
+                                                            color = Color.White,
+                                                            fontSize = 18.sp,
                                                             fontWeight = FontWeight.SemiBold,
-                                                            fontFamily = currentFontFamily
+                                                            fontFamily = currentFontFamily,
+                                                            style = TextStyle(
+                                                                shadow = Shadow(
+                                                                    color = Color.Black.copy(alpha = 0.6f),
+                                                                    offset = Offset(2f, 2f),
+                                                                    blurRadius = 6f
+                                                                )
+                                                            )
                                                         )
                                                         Text(
                                                             text = "Contact • ${result.phoneNumber}",

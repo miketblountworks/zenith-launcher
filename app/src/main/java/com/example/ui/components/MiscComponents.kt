@@ -369,7 +369,7 @@ fun UsageBreakerOverlay(appName: String, icon: Drawable, onLaunch: () -> Unit, o
 fun CategoryHeader(title: String, color: Color, fontFamily: FontFamily) {
     Text(
         text = title,
-        fontSize = 11.sp,
+        fontSize = 18.sp,
         fontWeight = FontWeight.Bold,
         color = Color.White,
         fontFamily = fontFamily,
