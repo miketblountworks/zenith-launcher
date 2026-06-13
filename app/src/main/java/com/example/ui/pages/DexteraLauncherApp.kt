@@ -95,6 +95,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.BlendMode
@@ -992,6 +993,19 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                     modifier = Modifier
                                         .fillMaxSize()
                                         .nestedScroll(searchNestedScrollConnection)
+                                        .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
+                                        .drawWithContent {
+                                            drawContent()
+                                            drawRect(
+                                                brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                                                    0.0f to androidx.compose.ui.graphics.Color.Transparent,
+                                                    0.05f to androidx.compose.ui.graphics.Color.Black,
+                                                    0.95f to androidx.compose.ui.graphics.Color.Black,
+                                                    1.0f to androidx.compose.ui.graphics.Color.Transparent
+                                                ),
+                                                blendMode = androidx.compose.ui.graphics.BlendMode.DstIn
+                                            )
+                                        }
                                         .padding(horizontal = 12.dp, vertical = 6.dp)
                                         .padding(horizontal = 14.dp),
                                     verticalArrangement = Arrangement.Bottom,
@@ -2439,14 +2453,12 @@ fun SearchResultItem(
         }
         is SearchResult.ContactResult -> {
             val initials = result.label.split(" ").mapNotNull { it.firstOrNull() }.joinToString("").uppercase().take(2)
-            val iconModifier = Modifier
-                .size(28.dp)
-                .shadow(
-                    elevation = 4.dp,
-                    shape = CircleShape,
-                    ambientColor = Color.Black,
-                    spotColor = Color.Black
-                )
+            val iconShadowModifier = Modifier.shadow(
+                elevation = 6.dp,
+                shape = CircleShape,
+                ambientColor = Color.Black,
+                spotColor = Color.Black
+            )
             
             Row(
                 modifier = Modifier
@@ -2479,36 +2491,7 @@ fun SearchResultItem(
                     .padding(vertical = 8.dp, horizontal = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // 1. Avatar/Photo
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(currentThemeColor.copy(alpha = 0.2f))
-                        .border(1.dp, currentThemeColor.copy(alpha = 0.4f), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (result.photoUri != null) {
-                        AsyncImage(
-                            model = result.photoUri,
-                            contentDescription = null,
-                            modifier = Modifier.fillMaxSize().clip(CircleShape),
-                            contentScale = androidx.compose.ui.layout.ContentScale.Crop
-                        )
-                    } else {
-                        Text(
-                            text = if (initials.isNotEmpty()) initials else "👤",
-                            color = currentThemeColor,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp,
-                            fontFamily = currentFontFamily
-                        )
-                    }
-                }
-                
-                Spacer(modifier = Modifier.width(12.dp))
-
-                // 2. Call Button
+                // 1. Call IconButton
                 IconButton(
                     onClick = {
                         UniversalSearchEngine.recordSelection(context, result)
@@ -2518,20 +2501,17 @@ fun SearchResultItem(
                             context.startActivity(intent)
                             onCloseSearch()
                         } catch (_: Exception) {}
-                    },
-                    modifier = iconModifier
+                    }
                 ) {
                     Icon(
                         imageVector = Icons.Default.Phone,
                         contentDescription = "Call Contact",
                         tint = Color.White,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(24.dp).then(iconShadowModifier)
                     )
                 }
 
-                Spacer(modifier = Modifier.width(8.dp))
-
-                // 3. Message Button
+                // 2. Message IconButton
                 IconButton(
                     onClick = {
                         UniversalSearchEngine.recordSelection(context, result)
@@ -2541,21 +2521,20 @@ fun SearchResultItem(
                             context.startActivity(intent)
                             onCloseSearch()
                         } catch (_: Exception) {}
-                    },
-                    modifier = iconModifier
+                    }
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.Message,
                         contentDescription = "Message Contact",
                         tint = Color.White,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(24.dp).then(iconShadowModifier)
                     )
                 }
 
-                // 4. Spacer(Modifier.weight(1f))
+                // 3. Spacer(modifier = Modifier.weight(1f))
                 Spacer(modifier = Modifier.weight(1f))
 
-                // 5. Contact Info Column (End aligned)
+                // 4. Column(horizontalAlignment = Alignment.End)
                 Column(
                     horizontalAlignment = Alignment.End
                 ) {
@@ -2588,6 +2567,36 @@ fun SearchResultItem(
                             )
                         )
                     )
+                }
+
+                // 5. Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(12.dp))
+
+                // 6. Contact Avatar / Photo Component
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(currentThemeColor.copy(alpha = 0.2f))
+                        .border(1.dp, currentThemeColor.copy(alpha = 0.4f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (result.photoUri != null) {
+                        AsyncImage(
+                            model = result.photoUri,
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize().clip(CircleShape),
+                            contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                        )
+                    } else {
+                        Text(
+                            text = if (initials.isNotEmpty()) initials else "👤",
+                            color = currentThemeColor,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp,
+                            fontFamily = currentFontFamily
+                        )
+                    }
                 }
             }
         }
