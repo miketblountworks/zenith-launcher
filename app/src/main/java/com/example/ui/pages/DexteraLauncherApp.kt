@@ -82,6 +82,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -98,6 +99,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
@@ -108,6 +110,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.edit
@@ -228,6 +231,21 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
     }
     
     val hapticFeedback = LocalHapticFeedback.current
+
+    var searchBarOffset by remember { mutableFloatStateOf(0f) }
+    val maxSearchBarOffset = with(density) { 150.dp.toPx() }
+    val searchNestedScrollConnection = remember {
+        object : androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
+            override fun onPreScroll(
+                available: Offset,
+                source: androidx.compose.ui.input.nestedscroll.NestedScrollSource
+            ): Offset {
+                val delta = available.y
+                searchBarOffset = (searchBarOffset - delta).coerceIn(0f, maxSearchBarOffset)
+                return Offset.Zero
+            }
+        }
+    }
 
     // Navigation / State flags
     var searchQuery by remember { mutableStateOf("") }
@@ -412,6 +430,12 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
     var isTouchingSidebar by remember { mutableStateOf(false) }
     var sidebarTouchY by remember { mutableStateOf<Float?>(null) }
     var sidebarTouchX by remember { mutableStateOf<Float?>(null) }
+
+    val animatedSearchBarOffset by animateFloatAsState(
+        targetValue = searchBarOffset,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "animatedSearchBarOffset"
+    )
 
     LaunchedEffect(targetAlphabetIndex) {
         if (isTouchingSidebar) {
@@ -904,7 +928,9 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                 .fillMaxWidth()
                         ) {
                             if (searchQuery.isNotEmpty() || isSearchFocused) {
-                                val searchListState = rememberLazyListState()
+                                val searchListState = rememberLazyListState(
+                                    initialFirstVisibleItemIndex = if (displayedResults.isNotEmpty()) (Int.MAX_VALUE / 2) - ((Int.MAX_VALUE / 2) % displayedResults.size) else 0
+                                )
                                 val searchFocusManager = LocalFocusManager.current
                                 
                                 BackHandler(enabled = true) {
@@ -942,6 +968,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                     state = searchListState,
                                     modifier = Modifier
                                         .fillMaxSize()
+                                        .nestedScroll(searchNestedScrollConnection)
                                         .padding(horizontal = 12.dp, vertical = 6.dp)
                                         .padding(horizontal = 14.dp),
                                     verticalArrangement = Arrangement.Bottom,
@@ -951,55 +978,6 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                         bottom = 140.dp + WindowInsets.ime.getBottom(density).let { with(density) { it.toDp() } }
                                     )
                                 ) {
-                                    // CATEGORY FILTER CHIPS
-                                    item {
-                                        androidx.compose.foundation.lazy.LazyRow(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(vertical = 12.dp),
-                                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                            contentPadding = PaddingValues(horizontal = 6.dp)
-                                        ) {
-                                            items(listOf("All", "Contacts", "Apps", "Web", "Settings & Files")) { cat ->
-                                                val isSelected = activeSearchCategoryFilter == cat
-                                                Box(
-                                                    modifier = Modifier
-                                                        .clip(RoundedCornerShape(16.dp))
-                                                        .background(
-                                                            if (isSelected) currentThemeColor.copy(alpha = 0.25f)
-                                                            else adaptiveGlassBg
-                                                        )
-                                                        .border(
-                                                            1.dp,
-                                                            if (isSelected) currentThemeColor.copy(alpha = 0.5f)
-                                                            else adaptiveGlassBorder,
-                                                            RoundedCornerShape(16.dp)
-                                                        )
-                                                        .clickable {
-                                                            activeSearchCategoryFilter = cat
-                                                        }
-                                                        .padding(horizontal = 14.dp, vertical = 8.dp)
-                                                ) {
-                                                    Text(
-                                                        text = cat,
-                                                        color = if (isSelected) currentThemeColor else adaptiveTextColor,
-                                                        fontSize = 12.sp,
-                                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                                        fontFamily = currentFontFamily,
-                                                        style = TextStyle(
-                                                            shadow = Shadow(
-                                                                color = Color.Black.copy(alpha = 0.6f),
-                                                                offset = Offset(1f, 1f),
-                                                                blurRadius = 3f
-                                                            )
-                                                        )
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    // Onboarding Invitation empty search focused state
                                     if (searchQuery.isEmpty()) {
                                         item {
                                             Column(
@@ -1049,368 +1027,45 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                             }
                                         }
                                     } else {
-                                        val contacts = displayedResults.filterIsInstance<SearchResult.ContactResult>()
-                                        val apps = displayedResults.filterIsInstance<SearchResult.AppResult>()
-                                        val webs = displayedResults.filterIsInstance<SearchResult.WebResult>()
-                                        val others = displayedResults.filter { it is SearchResult.SettingResult || it is SearchResult.FileResult }
-
-                                        if (others.isNotEmpty()) {
-                                            items(others) { result ->
-                                                when (result) {
-                                                    is SearchResult.SettingResult -> {
-                                                        Row(
-                                                            modifier = Modifier
-                                                                .fillMaxWidth()
-                                                                .clickable {
-                                                                    UniversalSearchEngine.recordSelection(contextForSearch, result)
-                                                                    if (result.action.startsWith("launcher_")) {
-                                                                        val cat = when (result.action) {
-                                                                            "launcher_perf" -> "Performance"
-                                                                            "launcher_gestures" -> "Gestures"
-                                                                            "launcher_permissions" -> "Permissions"
-                                                                            "launcher_search" -> "Search"
-                                                                            "launcher_pages" -> "Pages"
-                                                                            else -> null
-                                                                        }
-                                                                        isSearchFocused = false
-                                                                        searchQuery = ""
-                                                                        searchFocusManager.clearFocus()
-                                                                        activeSettingsCategory = cat
-                                                                        showSettingsPanel = true
-                                                                    } else {
-                                                                        try {
-                                                                            val intent = Intent(result.action)
-                                                                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                                                            contextForSearch.startActivity(intent)
-                                                                        } catch (_: Exception) {}
-                                                                    }
-                                                                }
-                                                                .padding(vertical = 8.dp, horizontal = 12.dp),
-                                                            verticalAlignment = Alignment.CenterVertically
-                                                        ) {
-                                                            Box(
-                                                                modifier = Modifier
-                                                                    .size(36.dp)
-                                                                    .background(currentThemeColor.copy(alpha = 0.15f), CircleShape),
-                                                                contentAlignment = Alignment.Center
-                                                            ) {
-                                                                Icon(
-                                                                    imageVector = Icons.Default.Settings,
-                                                                    contentDescription = null,
-                                                                    tint = currentThemeColor,
-                                                                    modifier = Modifier.size(16.dp)
-                                                                )
-                                                            }
-                                                            Spacer(modifier = Modifier.width(14.dp))
-                                                            Column(modifier = Modifier.weight(1f)) {
-                                                                Text(
-                                                                    text = result.label,
-                                                                    color = Color.White,
-                                                                    fontSize = 18.sp,
-                                                                    fontWeight = FontWeight.SemiBold,
-                                                                    fontFamily = currentFontFamily,
-                                                                    style = TextStyle(
-                                                                        shadow = Shadow(
-                                                                            color = Color.Black.copy(alpha = 0.6f),
-                                                                            offset = Offset(2f, 2f),
-                                                                            blurRadius = 6f
-                                                                        )
-                                                                    )
-                                                                )
-                                                                Text(
-                                                                    text = "System Setting",
-                                                                    color = adaptiveTextMuted,
-                                                                    fontSize = 11.sp,
-                                                                    fontFamily = currentFontFamily
-                                                                )
-                                                            }
-                                                        }
-                                                    }
-                                                    is SearchResult.FileResult -> {
-                                                        Row(
-                                                            modifier = Modifier
-                                                                .fillMaxWidth()
-                                                                .clickable {
-                                                                    UniversalSearchEngine.recordSelection(contextForSearch, result)
-                                                                    Toast.makeText(contextForSearch, "File Selected: ${result.label}", Toast.LENGTH_SHORT).show()
-                                                                }
-                                                                .padding(vertical = 8.dp, horizontal = 12.dp),
-                                                            verticalAlignment = Alignment.CenterVertically
-                                                        ) {
-                                                            Box(
-                                                                modifier = Modifier
-                                                                    .size(36.dp)
-                                                                    .background(Color.White.copy(alpha = 0.1f), CircleShape),
-                                                                contentAlignment = Alignment.Center
-                                                            ) {
-                                                                Text("📄", fontSize = 16.sp)
-                                                            }
-                                                            Spacer(modifier = Modifier.width(14.dp))
-                                                            Column(modifier = Modifier.weight(1f)) {
-                                                                Text(
-                                                                    text = result.label,
-                                                                    color = Color.White,
-                                                                    fontSize = 18.sp,
-                                                                    fontWeight = FontWeight.SemiBold,
-                                                                    fontFamily = currentFontFamily,
-                                                                    maxLines = 1,
-                                                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                                                                    style = TextStyle(
-                                                                        shadow = Shadow(
-                                                                            color = Color.Black.copy(alpha = 0.6f),
-                                                                            offset = Offset(2f, 2f),
-                                                                            blurRadius = 6f
-                                                                        )
-                                                                    )
-                                                                )
-                                                                val kbSize = result.size / 1024
-                                                                Text(
-                                                                    text = "Local File • ${kbSize} KB • ${result.mimeType ?: "Unknown type"}",
-                                                                    color = adaptiveTextMuted,
-                                                                    fontSize = 11.sp,
-                                                                    fontFamily = currentFontFamily
-                                                                )
-                                                            }
-                                                        }
-                                                    }
-                                                    else -> {}
+                                        val totalItems = displayedResults.size
+                                        if (totalItems > 0) {
+                                            items(
+                                                count = Int.MAX_VALUE,
+                                                key = { index ->
+                                                    val actualIndex = index % totalItems
+                                                    val res = displayedResults[actualIndex]
+                                                    "${res.id}_$index"
                                                 }
-                                            }
-                                            item {
-                                                CategoryHeader("SYSTEM SETTINGS & FILES", currentThemeColor, currentFontFamily)
-                                            }
-                                        }
-
-                                        if (webs.isNotEmpty()) {
-                                            items(webs) { result ->
-                                                Row(
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .clickable {
-                                                            UniversalSearchEngine.recordSelection(contextForSearch, result)
-                                                            try {
-                                                                val intent = Intent(Intent.ACTION_WEB_SEARCH).apply {
-                                                                    putExtra(android.app.SearchManager.QUERY, result.label)
-                                                                }
-                                                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                                                contextForSearch.startActivity(intent)
-                                                            } catch (e: Exception) {
-                                                                try {
-                                                                    val intent = Intent(Intent.ACTION_VIEW, "https://www.google.com/search?q=${java.net.URLEncoder.encode(result.label, "UTF-8")}".toUri())
-                                                                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                                                    contextForSearch.startActivity(intent)
-                                                                } catch (_: Exception) {}
-                                                            }
-                                                        }
-                                                        .padding(vertical = 8.dp, horizontal = 12.dp),
-                                                    verticalAlignment = Alignment.CenterVertically
-                                                ) {
-                                                    Box(
-                                                        modifier = Modifier
-                                                            .size(36.dp)
-                                                            .background(Color.White.copy(alpha = 0.05f), CircleShape),
-                                                        contentAlignment = Alignment.Center
-                                                    ) {
-                                                        Icon(
-                                                            imageVector = Icons.Default.Search,
-                                                            contentDescription = null,
-                                                            tint = adaptiveTextColor.copy(alpha = 0.6f),
-                                                            modifier = Modifier.size(16.dp)
-                                                        )
+                                            ) { index ->
+                                                val actualIndex = index % totalItems
+                                                val result = displayedResults[actualIndex]
+                                                
+                                                SearchResultItem(
+                                                    result = result,
+                                                    currentThemeColor = currentThemeColor,
+                                                    currentFontFamily = currentFontFamily,
+                                                    adaptiveTextColor = adaptiveTextColor,
+                                                    adaptiveTextMuted = adaptiveTextMuted,
+                                                    iconPackVal = iconPackVal,
+                                                    iconThemeColor = iconThemeColor,
+                                                    uiState = uiState,
+                                                    limitedAppsSet = limitedAppsSet,
+                                                    allUsersVal = allUsersVal,
+                                                    context = contextForSearch,
+                                                    activity = activity,
+                                                    onAppLongPress = { focusedContextMenuApp = it },
+                                                    onAppLimited = { activeBreakerApp = it },
+                                                    onSettingsCategorySelect = { 
+                                                        activeSettingsCategory = it
+                                                        showSettingsPanel = true
+                                                    },
+                                                    onUserSelect = { selectedUser = it },
+                                                    onCloseSearch = {
+                                                        searchQuery = ""
+                                                        isSearchFocused = false
+                                                        searchFocusManager.clearFocus()
                                                     }
-                                                    Spacer(modifier = Modifier.width(14.dp))
-                                                    Text(
-                                                        text = result.label,
-                                                        color = Color.White,
-                                                        fontSize = 18.sp,
-                                                        fontFamily = currentFontFamily,
-                                                        modifier = Modifier.weight(1f),
-                                                        style = TextStyle(
-                                                            shadow = Shadow(
-                                                                color = Color.Black.copy(alpha = 0.6f),
-                                                                offset = Offset(2f, 2f),
-                                                                blurRadius = 6f
-                                                            )
-                                                        )
-                                                    )
-                                                    Icon(
-                                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                                        contentDescription = null,
-                                                        tint = Color.White.copy(alpha = 0.6f),
-                                                        modifier = Modifier
-                                                            .size(14.dp)
-                                                            .graphicsLayer { rotationZ = 135f }
-                                                    )
-                                                }
-                                            }
-                                            item {
-                                                CategoryHeader("WEB SUGGESTIONS", currentThemeColor, currentFontFamily)
-                                            }
-                                        }
-
-                                        if (apps.isNotEmpty()) {
-                                            items(apps) { result ->
-                                                val appInfo = uiState.apps.find { it.packageName == result.packageName }
-                                                val isLimitedApp = result.packageName in limitedAppsSet
-                                                Row(
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .alpha(if (isLimitedApp) 0.4f else 1f)
-                                                        .pointerInput(result) {
-                                                            detectTapGestures(
-                                                                onLongPress = { 
-                                                                    if (appInfo != null) {
-                                                                        focusedContextMenuApp = appInfo
-                                                                    }
-                                                                },
-                                                                onTap = {
-                                                                    UniversalSearchEngine.recordSelection(contextForSearch, result)
-                                                                    if (isLimitedApp && appInfo != null) {
-                                                                        activeBreakerApp = appInfo
-                                                                    } else {
-                                                                        activity.launchAppWithTracker(result.packageName)
-                                                                    }
-                                                                }
-                                                            )
-                                                        }
-                                                        .padding(vertical = 8.dp, horizontal = 12.dp),
-                                                    verticalAlignment = Alignment.CenterVertically
-                                                ) {
-                                                    if (appInfo != null) {
-                                                        StyledAppIcon(appInfo.icon, iconPackVal, iconThemeColor)
-                                                    } else {
-                                                        Box(
-                                                            modifier = Modifier
-                                                                .size(36.dp)
-                                                                .background(Color.White.copy(alpha = 0.1f), RoundedCornerShape(8.dp)),
-                                                            contentAlignment = Alignment.Center
-                                                        ) {
-                                                            Text("📱", fontSize = 16.sp)
-                                                        }
-                                                    }
-                                                    Spacer(modifier = Modifier.width(14.dp))
-                                                    Column(modifier = Modifier.weight(1f)) {
-                                                        Text(
-                                                            text = result.label,
-                                                            color = Color.White,
-                                                            fontSize = 18.sp,
-                                                            fontWeight = FontWeight.SemiBold,
-                                                            fontFamily = currentFontFamily,
-                                                            style = TextStyle(
-                                                                shadow = Shadow(
-                                                                    color = Color.Black.copy(alpha = 0.6f),
-                                                                    offset = Offset(2f, 2f),
-                                                                    blurRadius = 6f
-                                                                )
-                                                            )
-                                                        )
-                                                        Text(
-                                                            text = "App • ${result.packageName}",
-                                                            color = adaptiveTextMuted,
-                                                            fontSize = 11.sp,
-                                                            fontFamily = currentFontFamily,
-                                                            maxLines = 1,
-                                                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                                                        )
-                                                    }
-                                                }
-                                            }
-                                            item {
-                                                CategoryHeader("APPLICATIONS", currentThemeColor, currentFontFamily)
-                                            }
-                                        }
-
-                                        if (contacts.isNotEmpty()) {
-                                            items(contacts) { result ->
-                                                val initials = result.label.split(" ").mapNotNull { it.firstOrNull() }.joinToString("").uppercase().take(2)
-                                                Row(
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .clickable {
-                                                            UniversalSearchEngine.recordSelection(contextForSearch, result)
-                                                            if (result.isRoomUser) {
-                                                                val userId = result.id.removePrefix("room_").toIntOrNull()
-                                                                val match = allUsersVal.find { it.id == userId }
-                                                                if (match != null) {
-                                                                    selectedUser = match
-                                                                } else {
-                                                                    try {
-                                                                        val intent = Intent(Intent.ACTION_DIAL, "tel:${result.phoneNumber}".toUri())
-                                                                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                                                        contextForSearch.startActivity(intent)
-                                                                    } catch (_: Exception) {}
-                                                                }
-                                                            } else {
-                                                                try {
-                                    val intent = Intent(Intent.ACTION_DIAL, "tel:${result.phoneNumber}".toUri())
-                                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                    contextForSearch.startActivity(intent)
-                                } catch (_: Exception) {}
-                                                            }
-                                                        }
-                                                        .padding(vertical = 8.dp, horizontal = 12.dp),
-                                                    verticalAlignment = Alignment.CenterVertically
-                                                ) {
-                                                    Box(
-                                                        modifier = Modifier
-                                                            .size(36.dp)
-                                                            .background(currentThemeColor.copy(alpha = 0.2f), CircleShape)
-                                                            .border(1.dp, currentThemeColor.copy(alpha = 0.4f), CircleShape),
-                                                        contentAlignment = Alignment.Center
-                                                    ) {
-                                                        Text(
-                                                            text = if (initials.isNotEmpty()) initials else "👤",
-                                                            color = currentThemeColor,
-                                                            fontWeight = FontWeight.Bold,
-                                                            fontSize = 12.sp,
-                                                            fontFamily = currentFontFamily
-                                                        )
-                                                    }
-                                                    Spacer(modifier = Modifier.width(14.dp))
-                                                    Column(modifier = Modifier.weight(1f)) {
-                                                        Text(
-                                                            text = result.label,
-                                                            color = Color.White,
-                                                            fontSize = 18.sp,
-                                                            fontWeight = FontWeight.SemiBold,
-                                                            fontFamily = currentFontFamily,
-                                                            style = TextStyle(
-                                                                shadow = Shadow(
-                                                                    color = Color.Black.copy(alpha = 0.6f),
-                                                                    offset = Offset(2f, 2f),
-                                                                    blurRadius = 6f
-                                                                )
-                                                            )
-                                                        )
-                                                        Text(
-                                                            text = "Contact • ${result.phoneNumber}",
-                                                            color = adaptiveTextMuted,
-                                                            fontSize = 11.sp,
-                                                            fontFamily = currentFontFamily
-                                                        )
-                                                    }
-                                                    IconButton(
-                                                        onClick = {
-                                                            UniversalSearchEngine.recordSelection(contextForSearch, result)
-                                                            try {
-                                                                val intent = Intent(Intent.ACTION_DIAL, "tel:${result.phoneNumber}".toUri())
-                                                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                                                contextForSearch.startActivity(intent)
-                                                            } catch (_: Exception) {}
-                                                        },
-                                                        modifier = Modifier.size(28.dp)
-                                                    ) {
-                                                        Icon(
-                                                            imageVector = Icons.Default.Phone,
-                                                            contentDescription = "Call Contact",
-                                                            tint = currentThemeColor,
-                                                            modifier = Modifier.size(16.dp)
-                                                        )
-                                                    }
-                                                }
-                                            }
-                                            item {
-                                                CategoryHeader("CONTACTS", currentThemeColor, currentFontFamily)
+                                                )
                                             }
                                         }
                                     }
@@ -2328,10 +1983,60 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
+                .offset { IntOffset(0, animatedSearchBarOffset.roundToInt()) }
                 .navigationBarsPadding()
                 .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
         ) {
-            AdvancedSearchBar(
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                // CATEGORY FILTER CHIPS
+                if (searchQuery.isNotEmpty() || isSearchFocused) {
+                    androidx.compose.foundation.lazy.LazyRow(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        contentPadding = PaddingValues(horizontal = 6.dp)
+                    ) {
+                        items(listOf("All", "Contacts", "Apps", "Web", "Settings & Files")) { cat ->
+                            val isSelected = activeSearchCategoryFilter == cat
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(
+                                        if (isSelected) currentThemeColor.copy(alpha = 0.25f)
+                                        else adaptiveGlassBg
+                                    )
+                                    .border(
+                                        1.dp,
+                                        if (isSelected) currentThemeColor.copy(alpha = 0.5f)
+                                        else adaptiveGlassBorder,
+                                        RoundedCornerShape(16.dp)
+                                    )
+                                    .clickable {
+                                        activeSearchCategoryFilter = cat
+                                    }
+                                    .padding(horizontal = 14.dp, vertical = 8.dp)
+                            ) {
+                                Text(
+                                    text = cat,
+                                    color = if (isSelected) currentThemeColor else adaptiveTextColor,
+                                    fontSize = 12.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    fontFamily = currentFontFamily,
+                                    style = TextStyle(
+                                        shadow = Shadow(
+                                            color = Color.Black.copy(alpha = 0.6f),
+                                            offset = Offset(1f, 1f),
+                                            blurRadius = 3f
+                                        )
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+
+                AdvancedSearchBar(
                 query = searchQuery,
                 onQueryChange = {
                     searchQuery = it
@@ -2456,6 +2161,366 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                     }
                 }
             )
+        }
+    }
+}
+}
+
+@Composable
+fun SearchResultItem(
+    result: SearchResult,
+    currentThemeColor: Color,
+    currentFontFamily: FontFamily,
+    adaptiveTextColor: Color,
+    adaptiveTextMuted: Color,
+    iconPackVal: String,
+    iconThemeColor: Color,
+    uiState: com.example.model.LauncherUiState,
+    limitedAppsSet: Set<String>,
+    allUsersVal: List<UserEntity>,
+    context: Context,
+    activity: MainActivity,
+    onAppLongPress: (AppInfo) -> Unit,
+    onAppLimited: (AppInfo) -> Unit,
+    onSettingsCategorySelect: (String) -> Unit,
+    onUserSelect: (UserEntity) -> Unit,
+    onCloseSearch: () -> Unit
+) {
+    when (result) {
+        is SearchResult.SettingResult -> {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        UniversalSearchEngine.recordSelection(context, result)
+                        if (result.action.startsWith("launcher_")) {
+                            val cat = when (result.action) {
+                                "launcher_perf" -> "Performance"
+                                "launcher_gestures" -> "Gestures"
+                                "launcher_permissions" -> "Permissions"
+                                "launcher_search" -> "Search"
+                                "launcher_pages" -> "Pages"
+                                else -> null
+                            }
+                            if (cat != null) onSettingsCategorySelect(cat)
+                            onCloseSearch()
+                        } else {
+                            try {
+                                val intent = Intent(result.action)
+                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                context.startActivity(intent)
+                                onCloseSearch()
+                            } catch (_: Exception) {}
+                        }
+                    }
+                    .padding(vertical = 8.dp, horizontal = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .background(currentThemeColor.copy(alpha = 0.15f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = null,
+                        tint = currentThemeColor,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(14.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = result.label,
+                        color = Color.White,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        fontFamily = currentFontFamily,
+                        style = TextStyle(
+                            shadow = Shadow(
+                                color = Color.Black.copy(alpha = 0.6f),
+                                offset = Offset(2f, 2f),
+                                blurRadius = 6f
+                            )
+                        )
+                    )
+                    Text(
+                        text = "System Setting",
+                        color = adaptiveTextMuted,
+                        fontSize = 11.sp,
+                        fontFamily = currentFontFamily
+                    )
+                }
+            }
+        }
+        is SearchResult.FileResult -> {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        UniversalSearchEngine.recordSelection(context, result)
+                        Toast.makeText(context, "File Selected: ${result.label}", Toast.LENGTH_SHORT).show()
+                        onCloseSearch()
+                    }
+                    .padding(vertical = 8.dp, horizontal = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .background(Color.White.copy(alpha = 0.1f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("📄", fontSize = 16.sp)
+                }
+                Spacer(modifier = Modifier.width(14.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = result.label,
+                        color = Color.White,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        fontFamily = currentFontFamily,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                        style = TextStyle(
+                            shadow = Shadow(
+                                color = Color.Black.copy(alpha = 0.6f),
+                                offset = Offset(2f, 2f),
+                                blurRadius = 6f
+                            )
+                        )
+                    )
+                    val kbSize = result.size / 1024
+                    Text(
+                        text = "Local File • ${kbSize} KB • ${result.mimeType ?: "Unknown type"}",
+                        color = adaptiveTextMuted,
+                        fontSize = 11.sp,
+                        fontFamily = currentFontFamily
+                    )
+                }
+            }
+        }
+        is SearchResult.WebResult -> {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        UniversalSearchEngine.recordSelection(context, result)
+                        try {
+                            val intent = Intent(Intent.ACTION_WEB_SEARCH).apply {
+                                putExtra(android.app.SearchManager.QUERY, result.label)
+                            }
+                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            context.startActivity(intent)
+                            onCloseSearch()
+                        } catch (e: Exception) {
+                            try {
+                                val intent = Intent(Intent.ACTION_VIEW, "https://www.google.com/search?q=${java.net.URLEncoder.encode(result.label, "UTF-8")}".toUri())
+                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                context.startActivity(intent)
+                                onCloseSearch()
+                            } catch (_: Exception) {}
+                        }
+                    }
+                    .padding(vertical = 8.dp, horizontal = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .background(Color.White.copy(alpha = 0.05f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = null,
+                        tint = adaptiveTextColor.copy(alpha = 0.6f),
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(14.dp))
+                Text(
+                    text = result.label,
+                    color = Color.White,
+                    fontSize = 18.sp,
+                    fontFamily = currentFontFamily,
+                    modifier = Modifier.weight(1f),
+                    style = TextStyle(
+                        shadow = Shadow(
+                            color = Color.Black.copy(alpha = 0.6f),
+                            offset = Offset(2f, 2f),
+                            blurRadius = 6f
+                        )
+                    )
+                )
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = null,
+                    tint = Color.White.copy(alpha = 0.6f),
+                    modifier = Modifier
+                        .size(14.dp)
+                        .graphicsLayer { rotationZ = 135f }
+                )
+            }
+        }
+        is SearchResult.AppResult -> {
+            val appInfo = uiState.apps.find { it.packageName == result.packageName }
+            val isLimitedApp = result.packageName in limitedAppsSet
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .alpha(if (isLimitedApp) 0.4f else 1f)
+                    .pointerInput(result) {
+                        detectTapGestures(
+                            onLongPress = { 
+                                if (appInfo != null) onAppLongPress(appInfo)
+                            },
+                            onTap = {
+                                UniversalSearchEngine.recordSelection(context, result)
+                                if (isLimitedApp && appInfo != null) {
+                                    onAppLimited(appInfo)
+                                } else {
+                                    activity.launchAppWithTracker(result.packageName)
+                                    onCloseSearch()
+                                }
+                            }
+                        )
+                    }
+                    .padding(vertical = 8.dp, horizontal = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (appInfo != null) {
+                    StyledAppIcon(appInfo.icon, iconPackVal, iconThemeColor)
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .background(Color.White.copy(alpha = 0.1f), RoundedCornerShape(8.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("📱", fontSize = 16.sp)
+                    }
+                }
+                Spacer(modifier = Modifier.width(14.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = result.label,
+                        color = Color.White,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        fontFamily = currentFontFamily,
+                        style = TextStyle(
+                            shadow = Shadow(
+                                color = Color.Black.copy(alpha = 0.6f),
+                                offset = Offset(2f, 2f),
+                                blurRadius = 6f
+                            )
+                        )
+                    )
+                    Text(
+                        text = "App • ${result.packageName}",
+                        color = adaptiveTextMuted,
+                        fontSize = 11.sp,
+                        fontFamily = currentFontFamily,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
+                }
+            }
+        }
+        is SearchResult.ContactResult -> {
+            val initials = result.label.split(" ").mapNotNull { it.firstOrNull() }.joinToString("").uppercase().take(2)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        UniversalSearchEngine.recordSelection(context, result)
+                        if (result.isRoomUser) {
+                            val userId = result.id.removePrefix("room_").toIntOrNull()
+                            val match = allUsersVal.find { it.id == userId }
+                            if (match != null) {
+                                onUserSelect(match)
+                                onCloseSearch()
+                            } else {
+                                try {
+                                    val intent = Intent(Intent.ACTION_DIAL, "tel:${result.phoneNumber}".toUri())
+                                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    context.startActivity(intent)
+                                    onCloseSearch()
+                                } catch (_: Exception) {}
+                            }
+                        } else {
+                            try {
+                                val intent = Intent(Intent.ACTION_DIAL, "tel:${result.phoneNumber}".toUri())
+                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                context.startActivity(intent)
+                                onCloseSearch()
+                            } catch (_: Exception) {}
+                        }
+                    }
+                    .padding(vertical = 8.dp, horizontal = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .background(currentThemeColor.copy(alpha = 0.2f), CircleShape)
+                        .border(1.dp, currentThemeColor.copy(alpha = 0.4f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = if (initials.isNotEmpty()) initials else "👤",
+                        color = currentThemeColor,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp,
+                        fontFamily = currentFontFamily
+                    )
+                }
+                Spacer(modifier = Modifier.width(14.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = result.label,
+                        color = Color.White,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        fontFamily = currentFontFamily,
+                        style = TextStyle(
+                            shadow = Shadow(
+                                color = Color.Black.copy(alpha = 0.6f),
+                                offset = Offset(2f, 2f),
+                                blurRadius = 6f
+                            )
+                        )
+                    )
+                    Text(
+                        text = "Contact • ${result.phoneNumber}",
+                        color = adaptiveTextMuted,
+                        fontSize = 11.sp,
+                        fontFamily = currentFontFamily
+                    )
+                }
+                IconButton(
+                    onClick = {
+                        UniversalSearchEngine.recordSelection(context, result)
+                        try {
+                            val intent = Intent(Intent.ACTION_DIAL, "tel:${result.phoneNumber}".toUri())
+                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            context.startActivity(intent)
+                            onCloseSearch()
+                        } catch (_: Exception) {}
+                    },
+                    modifier = Modifier.size(28.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Phone,
+                        contentDescription = "Call Contact",
+                        tint = currentThemeColor,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
         }
     }
 }
