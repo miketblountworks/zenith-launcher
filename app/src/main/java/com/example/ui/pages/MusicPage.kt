@@ -16,7 +16,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.*
+import androidx.compose.material.icons.automirrored.rounded.*
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -67,6 +69,24 @@ fun MusicPage(
     val trackInfo = mediaTrackInfoVal
     val isNotifGranted by activity.isNotificationPermissionGranted.collectAsState()
     val textShadow = Shadow(color = Color.Black.copy(alpha = 0.8f), offset = Offset(2f, 2f), blurRadius = 8f)
+
+    var feedbackIcon by remember { mutableStateOf<androidx.compose.ui.graphics.vector.ImageVector?>(null) }
+    val scaleAnim = remember { Animatable(0f) }
+    val alphaAnim = remember { Animatable(0f) }
+
+    LaunchedEffect(feedbackIcon) {
+        if (feedbackIcon != null) {
+            launch {
+                scaleAnim.snapTo(0.6f)
+                scaleAnim.animateTo(1.4f, animationSpec = tween(400, easing = FastOutSlowInEasing))
+            }
+            launch {
+                alphaAnim.snapTo(1f)
+                alphaAnim.animateTo(0f, animationSpec = tween(400, delayMillis = 100))
+                feedbackIcon = null
+            }
+        }
+    }
 
     if (trackInfo == null) {
         Box(modifier = modifier.fillMaxSize().padding(bottom = 120.dp), contentAlignment = Alignment.Center) {
@@ -167,6 +187,7 @@ fun MusicPage(
                         ) { change, dragAmount ->
                             change.consume()
                             if (dragAmount > 30f && !hasToggled) {
+                                feedbackIcon = if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow
                                 MediaController.dispatchMediaKey(activity, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 coroutineScope.launch {
@@ -200,8 +221,13 @@ fun MusicPage(
                                     totalDragX += dragAmount
                                     if (abs(totalDragX) > 80f) {
                                         triggered = true
-                                        if (totalDragX > 0) MediaController.dispatchMediaKey(activity, KeyEvent.KEYCODE_MEDIA_NEXT)
-                                        else MediaController.dispatchMediaKey(activity, KeyEvent.KEYCODE_MEDIA_PREVIOUS)
+                                        if (totalDragX > 0) {
+                                            feedbackIcon = Icons.Rounded.SkipNext
+                                            MediaController.dispatchMediaKey(activity, KeyEvent.KEYCODE_MEDIA_NEXT)
+                                        } else {
+                                            feedbackIcon = Icons.Rounded.SkipPrevious
+                                            MediaController.dispatchMediaKey(activity, KeyEvent.KEYCODE_MEDIA_PREVIOUS)
+                                        }
                                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                         coroutineScope.launch {
                                             artworkScale.animateTo(0.92f, tween(100))
@@ -287,6 +313,29 @@ fun MusicPage(
                                         .background(Color.White.copy(alpha = 0.8f), RoundedCornerShape(1.dp))
                                 )
                             }
+                        }
+
+                        // Playback Action Visual Feedback
+                        if (feedbackIcon != null) {
+                            Icon(
+                                imageVector = feedbackIcon!!,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier
+                                    .align(Alignment.Center)
+                                    .size(72.dp)
+                                    .graphicsLayer {
+                                        scaleX = scaleAnim.value
+                                        scaleY = scaleAnim.value
+                                        alpha = alphaAnim.value
+                                    }
+                                    .shadow(
+                                        elevation = 8.dp,
+                                        shape = CircleShape,
+                                        ambientColor = Color.Black,
+                                        spotColor = Color.Black
+                                    )
+                            )
                         }
                         
                         Column(
