@@ -147,6 +147,17 @@ fun MusicPage(
                     .aspectRatio(1.6f)
                     .graphicsLayer { scaleX = artworkScale.value; scaleY = artworkScale.value }
                     .pointerInput(Unit) {
+                        detectTapGestures(
+                            onTap = {
+                                try {
+                                    activeController?.sessionActivity?.send()
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                }
+                            }
+                        )
+                    }
+                    .pointerInput(Unit) {
                         detectVerticalDragGestures(
                             onDragStart = { hasToggled = false },
                             onDragEnd = { hasToggled = false },
@@ -163,6 +174,17 @@ fun MusicPage(
                                 hasToggled = true
                             }
                         }
+                    }
+                    .pointerInput(Unit) {
+                        detectTapGestures(
+                            onTap = {
+                                try {
+                                    activeController?.sessionActivity?.send()
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                }
+                            }
+                        )
                     }
                     .pointerInput(Unit) {
                         var totalDragX = 0f

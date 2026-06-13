@@ -371,14 +371,14 @@ fun CategoryHeader(title: String, color: Color, fontFamily: FontFamily) {
         text = title,
         fontSize = 11.sp,
         fontWeight = FontWeight.Bold,
-        color = color,
+        color = Color.White,
         fontFamily = fontFamily,
         letterSpacing = 1.5.sp,
         style = TextStyle(
             shadow = Shadow(
                 color = Color.Black.copy(alpha = 0.6f),
-                offset = Offset(1f, 2f),
-                blurRadius = 4f
+                offset = Offset(2f, 2f),
+                blurRadius = 6f
             )
         ),
         modifier = Modifier

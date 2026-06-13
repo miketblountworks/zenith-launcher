@@ -60,6 +60,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.HourglassEmpty
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
@@ -89,7 +90,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
@@ -98,6 +98,7 @@ import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
@@ -137,7 +138,7 @@ import kotlin.math.roundToInt
 @Composable
 fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewModel = viewModel()) {
     val context = LocalContext.current
-    val letters = remember { ('A'..'Z').toList() }
+    val letters = remember { listOf('⌛') + ('A'..'Z').toList() }
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
     val alphabetListState = rememberLazyListState()
@@ -391,19 +392,6 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
 
     val dragProgressState = remember { mutableStateOf(0f) }
 
-    val targetMainIndex by remember {
-        derivedStateOf {
-            val mainListTotalItems = if (categoriseByUsageVal && searchQuery.isEmpty()) {
-                topNApps.size + restAppsEntries.size + 2
-            } else {
-                standardListEntries.size
-            }
-            if (mainListTotalItems > 0) {
-                (dragProgressState.value * (mainListTotalItems - 1)).toInt().coerceIn(0, mainListTotalItems - 1)
-            } else 0
-        }
-    }
-
     val targetAlphabetIndex by remember {
         derivedStateOf {
             (dragProgressState.value * (letters.size - 1)).toInt().coerceIn(0, letters.size - 1)
@@ -424,9 +412,8 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
     var sidebarTouchY by remember { mutableStateOf<Float?>(null) }
     var sidebarTouchX by remember { mutableStateOf<Float?>(null) }
 
-    LaunchedEffect(targetMainIndex, targetAlphabetIndex) {
+    LaunchedEffect(targetAlphabetIndex) {
         if (isTouchingSidebar) {
-            listState.scrollToItem(targetMainIndex)
             alphabetListState.scrollToItem(targetAlphabetIndex)
         }
     }
@@ -441,9 +428,9 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
     
     val firstVisibleIndex by remember { derivedStateOf { listState.firstVisibleItemIndex } }
     LaunchedEffect(firstVisibleIndex) {
-        if (!isTouchingSidebar) {
-            hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-        }
+        if (isTouchingSidebar) return@LaunchedEffect
+        
+        hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
         val letter: Char? = if (categoriseByUsageVal && searchQuery.isEmpty()) {
             if (firstVisibleIndex == 0) {
                 topNApps.firstOrNull()?.label?.firstOrNull()?.uppercaseChar()
@@ -1482,7 +1469,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                         LazyColumn(
                                             state = listState,
                                             modifier = Modifier.fillMaxHeight().weight(1.0f).graphicsLayer { clip = false },
-                                            contentPadding = PaddingValues(bottom = 120.dp, start = 24.dp)
+                                            contentPadding = PaddingValues(bottom = 140.dp, start = 24.dp)
                                         ) {
                                             if (categoriseByUsageVal && searchQuery.isEmpty()) {
                                                 if (topNApps.isNotEmpty()) {
@@ -1492,9 +1479,9 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                             modifier = Modifier.padding(start = 4.dp, top = 20.dp, bottom = 8.dp)
                                                         ) {
                                                             Icon(
-                                                                imageVector = Icons.Default.Star,
+                                                                imageVector = Icons.Default.HourglassEmpty,
                                                                 contentDescription = null,
-                                                                tint = MaterialTheme.colorScheme.onSurface,
+                                                                tint = Color.White,
                                                                 modifier = Modifier.size(13.dp)
                                                             )
                                                             Spacer(modifier = Modifier.width(6.dp))
@@ -1503,7 +1490,14 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                                 fontSize = 10.sp,
                                                                 fontWeight = FontWeight.Bold,
                                                                 fontFamily = currentFontFamily,
-                                                                color = if (isLightBackground) currentThemeColor.copy(alpha = 0.85f) else currentThemeColor.copy(alpha = 0.7f),
+                                                                color = Color.White,
+                                                                style = TextStyle(
+                                                                    shadow = Shadow(
+                                                                        color = Color.Black.copy(alpha = 0.6f),
+                                                                        offset = Offset(2f, 2f),
+                                                                        blurRadius = 6f
+                                                                    )
+                                                                ),
                                                                 letterSpacing = 1.sp
                                                             )
                                                         }
@@ -1573,7 +1567,14 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                                     fontSize = 9.sp,
                                                                     fontWeight = FontWeight.Normal,
                                                                     fontFamily = currentFontFamily,
-                                                                    color = adaptiveTextColor.copy(alpha = 0.25f),
+                                                                    color = Color.White.copy(alpha = 0.8f),
+                                                                    style = TextStyle(
+                                                                        shadow = Shadow(
+                                                                            color = Color.Black.copy(alpha = 0.6f),
+                                                                            offset = Offset(2f, 2f),
+                                                                            blurRadius = 6f
+                                                                        )
+                                                                    ),
                                                                     modifier = Modifier.padding(horizontal = 16.dp),
                                                                     letterSpacing = 1.sp
                                                                 )
@@ -1718,34 +1719,19 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                     }
 
                                     val alphabetBox: @Composable RowScope.() -> Unit = {
-                                        val showTopFade by remember {
-                                            derivedStateOf {
-                                                alphabetListState.firstVisibleItemIndex > 0 || alphabetListState.firstVisibleItemScrollOffset > 0
-                                            }
-                                        }
                                         val scrollbarBottomPadding by animateDpAsState(
                                             targetValue = if (isQuickScrolling) 16.dp else 140.dp,
                                             animationSpec = tween(300),
                                             label = "scrollbar_padding"
                                         )
+                                        var alphabetHeight by remember { mutableIntStateOf(1) }
                                         Box(
                                             modifier = Modifier
                                                 .fillMaxHeight(0.85f)
                                                 .align(Alignment.CenterVertically)
                                                 .width(48.dp)
                                                 .padding(bottom = scrollbarBottomPadding)
-                                                .drawWithContent {
-                                                    drawContent()
-                                                    drawRect(
-                                                        brush = Brush.verticalGradient(
-                                                            0.0f to if (showTopFade) Color.Transparent else Color.Black,
-                                                            0.15f to Color.Black,
-                                                            0.85f to Color.Black,
-                                                            1.0f to Color.Transparent
-                                                        ),
-                                                        blendMode = BlendMode.DstIn
-                                                    )
-                                                }
+                                                .onSizeChanged { alphabetHeight = it.height }
                                                 .pointerInput(letters) {
                                                     detectVerticalDragGestures(
                                                         onDragStart = { 
@@ -1762,27 +1748,33 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                         },
                                                         onVerticalDrag = { change, _ ->
                                                             change.consume()
-                                                            val totalHeight = size.height.toFloat()
-                                                            val currentY = change.position.y.coerceIn(0f, totalHeight)
-                                                            val progress = currentY / totalHeight
+                                                            val currentY = change.position.y.coerceIn(0f, alphabetHeight.toFloat())
+                                                            val progress = currentY / alphabetHeight.toFloat()
                                                             dragProgressState.value = progress
                                                             
-                                                            val letterIndex = (progress * letters.size).toInt().coerceIn(0, letters.size - 1)
+                                                            val letterIndex = (progress * (letters.size - 1)).toInt().coerceIn(0, letters.size - 1)
                                                             val selectedLetter = letters[letterIndex]
+                                                            touchedLetter = selectedLetter
                                                             
-                                                            val listToSearch = if (categoriseByUsageVal && searchQuery.isEmpty()) restAppsEntries else standardListEntries
-                                                            val targetEntryIndex = listToSearch.indexOfFirst { entry ->
-                                                                entry is ListEntry.Header && entry.letter == selectedLetter
-                                                            }
-                                                            
-                                                            if (targetEntryIndex != -1) {
-                                                                val finalIndex = if (categoriseByUsageVal && searchQuery.isEmpty()) {
-                                                                    topNApps.size + 2 + targetEntryIndex
-                                                                } else {
-                                                                    targetEntryIndex
-                                                                }
+                                                            if (selectedLetter == '⌛') {
                                                                 coroutineScope.launch {
-                                                                    listState.scrollToItem(finalIndex)
+                                                                    listState.scrollToItem(0)
+                                                                }
+                                                            } else {
+                                                                val listToSearch = if (categoriseByUsageVal && searchQuery.isEmpty()) restAppsEntries else standardListEntries
+                                                                val targetEntryIndex = listToSearch.indexOfFirst { entry ->
+                                                                    entry is ListEntry.Header && entry.letter == selectedLetter
+                                                                }
+                                                                
+                                                                if (targetEntryIndex != -1) {
+                                                                    val finalIndex = if (categoriseByUsageVal && searchQuery.isEmpty()) {
+                                                                        topNApps.size + 2 + targetEntryIndex
+                                                                    } else {
+                                                                        targetEntryIndex
+                                                                    }
+                                                                    coroutineScope.launch {
+                                                                        listState.scrollToItem(finalIndex)
+                                                                    }
                                                                 }
                                                             }
                                                         }
@@ -1797,19 +1789,28 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                 verticalArrangement = Arrangement.spacedBy(12.dp)
                                             ) {
                                                 items(letters) { letter ->
-                                                    Text(
-                                                        text = letter.toString(),
-                                                        style = MaterialTheme.typography.titleMedium.copy(
-                                                            shadow = Shadow(
-                                                                color = Color.Black.copy(alpha = 0.5f),
-                                                                offset = Offset(2f, 2f),
-                                                                blurRadius = 4f
-                                                            )
-                                                        ),
-                                                        color = adaptiveTextColor,
-                                                        fontWeight = FontWeight.Bold,
-                                                        modifier = Modifier.padding(vertical = 4.dp)
-                                                    )
+                                                    if (letter == '⌛') {
+                                                        Icon(
+                                                            imageVector = Icons.Default.HourglassEmpty,
+                                                            contentDescription = null,
+                                                            tint = Color.White,
+                                                            modifier = Modifier.size(14.dp).padding(vertical = 4.dp)
+                                                        )
+                                                    } else {
+                                                        Text(
+                                                            text = letter.toString(),
+                                                            style = MaterialTheme.typography.titleMedium.copy(
+                                                                shadow = Shadow(
+                                                                    color = Color.Black.copy(alpha = 0.6f),
+                                                                    offset = Offset(2f, 2f),
+                                                                    blurRadius = 6f
+                                                                )
+                                                            ),
+                                                            color = Color.White,
+                                                            fontWeight = FontWeight.Bold,
+                                                            modifier = Modifier.padding(vertical = 4.dp)
+                                                        )
+                                                    }
                                                 }
                                             }
                                         }
@@ -1904,14 +1905,15 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                                          .graphicsLayer { alpha = bubbleAlpha }
                                                                          .size(120.dp)
                                                                          .background(
-                                                                             Color.Black.copy(alpha = 0.65f),
-                                                                             shape = RoundedCornerShape(24.dp)
-                                                                         ),
+                                                                             MaterialTheme.colorScheme.surfaceVariant,
+                                                                             shape = CircleShape
+                                                                         )
+                                                                         .padding(24.dp),
                                                                      contentAlignment = Alignment.Center
                                                                  ) {
                                                                      Text(
                                                                          text = (touchedLetter ?: 'A').toString(),
-                                                                         color = Color.White,
+                                                                         color = MaterialTheme.colorScheme.primary,
                                                                          fontSize = 64.sp,
                                                                          fontWeight = FontWeight.ExtraBold,
                                                                          fontFamily = currentFontFamily

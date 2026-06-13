@@ -79,12 +79,12 @@ fun AlphabetHeaderRow(
                     scaleY = scale
                     alpha = if (displayActive) 1.0f else 0.65f
                 },
-            color = themeColor,
+            color = Color.White,
             style = TextStyle(
                 shadow = Shadow(
                     color = Color.Black.copy(alpha = 0.6f),
-                    offset = Offset(1f, 2f),
-                    blurRadius = 4f
+                    offset = Offset(2f, 2f),
+                    blurRadius = 6f
                 )
             )
         )
