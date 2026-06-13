@@ -2066,12 +2066,14 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                 fontFamily = currentFontFamily,
                 onSearchWeb = { q ->
                     try {
-                        val intent = Intent(Intent.ACTION_WEB_SEARCH).apply {
-                            putExtra(android.app.SearchManager.QUERY, q)
-                        }
+                        val encodedQuery = java.net.URLEncoder.encode(q, "UTF-8")
+                        val uri = android.net.Uri.parse("https://www.google.com/search?q=$encodedQuery")
+                        val intent = Intent(Intent.ACTION_VIEW, uri)
                         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                         context.startActivity(intent)
-                    } catch (_: Exception) {}
+                    } catch (e: Exception) {
+                        android.util.Log.e("DexteraSearch", "Failed to launch web search", e)
+                    }
                 },
                 isSearchFocused = isSearchFocused,
                 onFocusChanged = { isSearchFocused = it },
@@ -2119,17 +2121,13 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                 }
                                 is SearchResult.WebResult -> {
                                     try {
-                                        val intent = Intent(Intent.ACTION_WEB_SEARCH).apply {
-                                            putExtra(android.app.SearchManager.QUERY, topResult.label)
-                                        }
+                                        val encodedQuery = java.net.URLEncoder.encode(topResult.label, "UTF-8")
+                                        val uri = android.net.Uri.parse("https://www.google.com/search?q=$encodedQuery")
+                                        val intent = Intent(Intent.ACTION_VIEW, uri)
                                         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                         contextForSearch.startActivity(intent)
                                     } catch (e: Exception) {
-                                        try {
-                                            val intent = Intent(Intent.ACTION_VIEW, "https://www.google.com/search?q=${java.net.URLEncoder.encode(topResult.label, "UTF-8")}".toUri())
-                                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                            contextForSearch.startActivity(intent)
-                                        } catch (_: Exception) {}
+                                        android.util.Log.e("DexteraSearch", "Failed to launch web search", e)
                                     }
                                 }
                                 is SearchResult.SettingResult -> {
@@ -2164,17 +2162,13 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                         val webSearchQuery = displayedResults.find { it is SearchResult.WebResult }?.label ?: searchQuery
                         if (webSearchQuery.trim().isNotEmpty()) {
                             try {
-                                val intent = Intent(Intent.ACTION_WEB_SEARCH).apply {
-                                    putExtra(android.app.SearchManager.QUERY, webSearchQuery)
-                                }
+                                val encodedQuery = java.net.URLEncoder.encode(webSearchQuery, "UTF-8")
+                                val uri = android.net.Uri.parse("https://www.google.com/search?q=$encodedQuery")
+                                val intent = Intent(Intent.ACTION_VIEW, uri)
                                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                 contextForSearch.startActivity(intent)
-                            } catch (_: Exception) {
-                                try {
-                                    val intent = Intent(Intent.ACTION_VIEW, "https://www.google.com/search?q=${java.net.URLEncoder.encode(webSearchQuery, "UTF-8")}".toUri())
-                                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                    contextForSearch.startActivity(intent)
-                                } catch (_: Exception) {}
+                            } catch (e: Exception) {
+                                android.util.Log.e("DexteraSearch", "Failed to launch web search", e)
                             }
                         }
                         searchQuery = ""
@@ -2330,19 +2324,14 @@ fun SearchResultItem(
                     .clickable {
                         UniversalSearchEngine.recordSelection(context, result)
                         try {
-                            val intent = Intent(Intent.ACTION_WEB_SEARCH).apply {
-                                putExtra(android.app.SearchManager.QUERY, result.label)
-                            }
+                            val encodedQuery = java.net.URLEncoder.encode(result.label, "UTF-8")
+                            val uri = android.net.Uri.parse("https://www.google.com/search?q=$encodedQuery")
+                            val intent = Intent(Intent.ACTION_VIEW, uri)
                             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                             context.startActivity(intent)
                             onCloseSearch()
                         } catch (e: Exception) {
-                            try {
-                                val intent = Intent(Intent.ACTION_VIEW, "https://www.google.com/search?q=${java.net.URLEncoder.encode(result.label, "UTF-8")}".toUri())
-                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                context.startActivity(intent)
-                                onCloseSearch()
-                            } catch (_: Exception) {}
+                            android.util.Log.e("DexteraSearch", "Failed to launch web search", e)
                         }
                     }
                     .padding(vertical = 8.dp, horizontal = 12.dp),
