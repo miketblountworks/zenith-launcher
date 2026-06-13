@@ -66,6 +66,7 @@ fun MusicPage(
     val mediaTrackInfoVal by activity.mediaTrackInfo.collectAsState()
     val trackInfo = mediaTrackInfoVal
     val isNotifGranted by activity.isNotificationPermissionGranted.collectAsState()
+    val textShadow = Shadow(color = Color.Black.copy(alpha = 0.8f), offset = Offset(2f, 2f), blurRadius = 8f)
 
     if (trackInfo == null) {
         Box(modifier = modifier.fillMaxSize().padding(bottom = 120.dp), contentAlignment = Alignment.Center) {
@@ -78,19 +79,19 @@ fun MusicPage(
                     modifier = Modifier.fillMaxWidth().padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Icon(Icons.Default.MusicNote, null, tint = contentColor.copy(alpha = 0.25f), modifier = Modifier.size(64.dp))
+                    Icon(Icons.Default.MusicNote, null, tint = Color.White.copy(alpha = 0.25f), modifier = Modifier.size(64.dp))
                     Spacer(Modifier.height(16.dp))
                     Text(
                         text = if (!isNotifGranted) "Permission Required" else "No Music Playing",
-                        fontSize = 20.sp, fontWeight = FontWeight.Bold, color = contentColor, fontFamily = fontFamily,
-                        style = TextStyle(shadow = Shadow(shadowColor, Offset(1f, 2f), 4f))
+                        fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White, fontFamily = fontFamily,
+                        style = TextStyle(shadow = textShadow)
                     )
                     Spacer(Modifier.height(8.dp))
                     Text(
                         text = if (!isNotifGranted) "Dextera requires Notification Access to detect music. Please grant it in settings."
                         else "Open any music app and play media to activate this screen.",
-                        fontSize = 13.sp, color = contentColor.copy(alpha = 0.6f), fontFamily = fontFamily, textAlign = TextAlign.Center,
-                        style = TextStyle(shadow = Shadow(shadowColor, Offset(1f, 1f), 2f))
+                        fontSize = 13.sp, color = Color.White.copy(alpha = 0.6f), fontFamily = fontFamily, textAlign = TextAlign.Center,
+                        style = TextStyle(shadow = textShadow)
                     )
                 }
             }
@@ -215,11 +216,13 @@ fun MusicPage(
                             Text(
                                 text = trackInfo.title,
                                 fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, color = Color.White,
+                                style = TextStyle(shadow = textShadow),
                                 maxLines = 1, textAlign = TextAlign.Center, modifier = Modifier.basicMarquee()
                             )
                             Text(
                                 text = trackInfo.artist,
                                 fontSize = 13.sp, fontWeight = FontWeight.Medium, color = Color.White.copy(0.75f),
+                                style = TextStyle(shadow = textShadow),
                                 maxLines = 1, textAlign = TextAlign.Center, modifier = Modifier.basicMarquee()
                             )
                         }
@@ -232,7 +235,7 @@ fun MusicPage(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(Icons.AutoMirrored.Filled.VolumeUp, null, tint = contentColor.copy(alpha = 0.5f), modifier = Modifier.size(20.dp))
+                Icon(Icons.AutoMirrored.Filled.VolumeUp, null, tint = Color.White.copy(alpha = 0.5f), modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(12.dp))
                 Slider(
                     value = coercedVolume,
@@ -267,14 +270,14 @@ fun MusicPage(
                 }
                 Text(
                     text = formatMs(realProgressMs),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.labelMedium.copy(shadow = textShadow),
+                    color = Color.White.copy(alpha = 0.7f),
                     fontFamily = fontFamily
                 )
                 Text(
                     text = formatMs(trackInfo.durationMs),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.labelMedium.copy(shadow = textShadow),
+                    color = Color.White.copy(alpha = 0.7f),
                     fontFamily = fontFamily
                 )
             }

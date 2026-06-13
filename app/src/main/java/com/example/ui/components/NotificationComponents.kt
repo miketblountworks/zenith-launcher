@@ -58,7 +58,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -155,6 +157,7 @@ fun NotificationSummaryWidget(
     contentColor: Color = Color.White
 ) {
     val activeNotifications = remember(notifications) { notifications }
+    val textShadow = Shadow(color = Color.Black.copy(alpha = 0.8f), offset = Offset(2f, 2f), blurRadius = 8f)
 
     Card(
         modifier = modifier.fillMaxWidth().padding(vertical = 4.dp),
@@ -172,7 +175,7 @@ fun NotificationSummaryWidget(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                    Icon(Icons.Default.Notifications, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Default.Notifications, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(12.dp))
                     val count = activeNotifications.size
                     val titleText = if (count == 0) "All clear!" else "$count Bundled Notifications"
@@ -181,13 +184,20 @@ fun NotificationSummaryWidget(
                         fontSize = 14.sp,
                         fontFamily = fontFamily,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        color = Color.White,
+                        style = TextStyle(shadow = textShadow),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
                 if (activeNotifications.isNotEmpty()) {
-                    Text(if (isExpanded) "Collapse" else "Expand", fontSize = 12.sp, color = primaryColor, fontWeight = FontWeight.Bold)
+                    Text(
+                        text = if (isExpanded) "Collapse" else "Expand", 
+                        fontSize = 12.sp, 
+                        color = primaryColor, 
+                        fontWeight = FontWeight.Bold,
+                        style = TextStyle(shadow = textShadow)
+                    )
                 }
             }
             if (isExpanded && activeNotifications.isNotEmpty()) {
@@ -223,7 +233,8 @@ fun NotificationSummaryWidget(
                                         text = item.appName.firstOrNull()?.uppercase() ?: "",
                                         color = primaryColor,
                                         fontWeight = FontWeight.Bold,
-                                        fontSize = 14.sp
+                                        fontSize = 14.sp,
+                                        style = TextStyle(shadow = textShadow)
                                     )
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
@@ -232,7 +243,8 @@ fun NotificationSummaryWidget(
                                         text = item.appName,
                                         fontSize = 14.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onSurface,
+                                        color = Color.White,
+                                        style = TextStyle(shadow = textShadow),
                                         fontFamily = fontFamily,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
@@ -240,7 +252,8 @@ fun NotificationSummaryWidget(
                                     Text(
                                         text = item.text,
                                         fontSize = 12.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        color = Color.White.copy(alpha = 0.85f),
+                                        style = TextStyle(shadow = textShadow),
                                         fontFamily = fontFamily,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
@@ -441,6 +454,8 @@ fun NotificationItemCard(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     
+    val textShadow = Shadow(color = Color.Black.copy(alpha = 0.8f), offset = Offset(2f, 2f), blurRadius = 8f)
+
     val appIconDrawable = remember(item.pkg) {
         try {
             context.packageManager.getApplicationIcon(item.pkg)
@@ -453,7 +468,7 @@ fun NotificationItemCard(
     var replyText by remember { mutableStateOf("") }
     var hasTextOverflow by remember { mutableStateOf(false) }
 
-    val actionTextColor = Color(0xFF9C27B0)
+    val actionTextColor = Color(0xFFE1BEE7) // Lightened for visibility on dark
 
     Box(
         modifier = modifier
@@ -476,7 +491,7 @@ fun NotificationItemCard(
                     Icon(
                         imageVector = Icons.Default.Delete,
                         contentDescription = "Dismiss",
-                        tint = MaterialTheme.colorScheme.onErrorContainer,
+                        tint = Color.White,
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -523,8 +538,8 @@ fun NotificationItemCard(
                 }
                 .fillMaxWidth()
                 .wrapContentHeight()
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(28.dp))
-                .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f), RoundedCornerShape(28.dp))
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.85f), RoundedCornerShape(28.dp))
+                .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(28.dp))
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
@@ -565,9 +580,10 @@ fun NotificationItemCard(
                     } else {
                         Text(
                             text = item.appName.firstOrNull()?.uppercase() ?: "",
-                            color = MaterialTheme.colorScheme.onSurface,
+                            color = Color.White,
                             fontWeight = FontWeight.Bold,
                             fontSize = 18.sp,
+                            style = TextStyle(shadow = textShadow),
                             fontFamily = fontFamily
                         )
                     }
@@ -586,7 +602,8 @@ fun NotificationItemCard(
                         text = item.appName,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        color = Color.White,
+                        style = TextStyle(shadow = textShadow),
                         fontFamily = fontFamily,
                         maxLines = if (isPopupMode) Int.MAX_VALUE else 1,
                         overflow = if (isPopupMode) TextOverflow.Clip else TextOverflow.Ellipsis
@@ -595,7 +612,8 @@ fun NotificationItemCard(
                     Text(
                         text = item.text,
                         fontSize = 13.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = Color.White.copy(alpha = 0.85f),
+                        style = TextStyle(shadow = textShadow),
                         fontFamily = fontFamily,
                         maxLines = if (isPopupMode) Int.MAX_VALUE else 1,
                         overflow = if (isPopupMode) TextOverflow.Clip else TextOverflow.Ellipsis,
@@ -627,7 +645,8 @@ fun NotificationItemCard(
                             text = action.title?.toString() ?: "Action",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
-                            color = actionTextColor,
+                            color = Color.White,
+                            style = TextStyle(shadow = textShadow),
                             fontFamily = fontFamily,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
@@ -665,25 +684,26 @@ fun NotificationItemCard(
                             value = replyText,
                             onValueChange = { replyText = it },
                             textStyle = TextStyle(
-                                color = MaterialTheme.colorScheme.onSurface,
+                                color = Color.White,
                                 fontSize = 13.sp,
-                                fontFamily = fontFamily
+                                fontFamily = fontFamily,
+                                shadow = textShadow
                             ),
                             modifier = Modifier
                                 .weight(1f)
                                 .heightIn(min = 44.dp)
                                 .background(
-                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                    Color.White.copy(alpha = 0.1f),
                                     RoundedCornerShape(22.dp)
                                 )
                                 .border(
                                     1.dp,
-                                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+                                    Color.White.copy(alpha = 0.2f),
                                     RoundedCornerShape(22.dp)
                                 )
                                 .padding(horizontal = 16.dp, vertical = 10.dp),
                             singleLine = true,
-                            cursorBrush = SolidColor(actionTextColor),
+                            cursorBrush = SolidColor(Color.White),
                             decorationBox = { innerTextField ->
                                 Box(
                                     modifier = Modifier.fillMaxWidth(),
@@ -692,9 +712,10 @@ fun NotificationItemCard(
                                     if (replyText.isEmpty()) {
                                         Text(
                                             text = placeholderLabel,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                            color = Color.White.copy(alpha = 0.5f),
                                             fontSize = 13.sp,
                                             fontFamily = fontFamily,
+                                            style = TextStyle(shadow = textShadow),
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis
                                         )
@@ -727,7 +748,7 @@ fun NotificationItemCard(
                             },
                             modifier = Modifier
                                 .size(44.dp)
-                                .background(actionTextColor, CircleShape)
+                                .background(Color.White.copy(alpha = 0.2f), CircleShape)
                         ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.Send,

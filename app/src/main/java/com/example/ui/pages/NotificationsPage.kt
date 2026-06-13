@@ -71,14 +71,17 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -107,6 +110,7 @@ fun NotificationsPage(
 ) {
     val haptic = LocalHapticFeedback.current
     val context = LocalContext.current
+    val textShadow = Shadow(color = Color.Black.copy(alpha = 0.8f), offset = Offset(2f, 2f), blurRadius = 8f)
     
     val activeNotifications = remember(notifications, allowedCategories) {
         notifications.filter {
@@ -155,7 +159,8 @@ fun NotificationsPage(
                         fontSize = 12.sp,
                         letterSpacing = 0.5.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        color = Color.White,
+                        style = TextStyle(shadow = textShadow),
                         fontFamily = fontFamily,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -165,8 +170,8 @@ fun NotificationsPage(
                         Text(
                             text = "Clear All",
                             fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.error,
-                            fontWeight = FontWeight.Bold,
+                            color = Color.White, // Keeping white but logic can vary
+                            style = TextStyle(shadow = textShadow, fontWeight = FontWeight.Bold),
                             fontFamily = fontFamily,
                             modifier = Modifier
                                 .clickable {
@@ -195,17 +200,18 @@ fun NotificationsPage(
                             Box(
                                 modifier = Modifier
                                     .size(64.dp)
-                                    .background(themeColor.copy(alpha = 0.1f), CircleShape),
+                                    .background(Color.White.copy(alpha = 0.1f), CircleShape),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Icon(Icons.Default.Notifications, contentDescription = null, tint = themeColor, modifier = Modifier.size(28.dp))
+                                Icon(Icons.Default.Notifications, contentDescription = null, tint = Color.White, modifier = Modifier.size(28.dp))
                             }
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
                                 text = "No Notifications",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface,
+                                color = Color.White,
+                                style = TextStyle(shadow = textShadow),
                                 fontFamily = fontFamily,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
@@ -321,7 +327,7 @@ fun NotificationsPage(
                                                 Icon(
                                                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                                     contentDescription = "Collapse",
-                                                    tint = themeColor,
+                                                    tint = Color.White,
                                                     modifier = Modifier.size(18.dp).graphicsLayer { rotationZ = 90f }
                                                 )
                                                 Spacer(modifier = Modifier.width(8.dp))
@@ -330,13 +336,20 @@ fun NotificationsPage(
                                                     fontSize = 12.sp,
                                                     letterSpacing = 1.sp,
                                                     fontWeight = FontWeight.Bold,
-                                                    color = themeColor,
+                                                    color = Color.White,
+                                                    style = TextStyle(shadow = textShadow),
                                                     fontFamily = fontFamily,
                                                     maxLines = 1,
                                                     overflow = TextOverflow.Ellipsis
                                                 )
                                             }
-                                            Text(text = "Collapse", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface, fontFamily = fontFamily)
+                                            Text(
+                                                text = "Collapse", 
+                                                fontSize = 12.sp, 
+                                                color = Color.White, 
+                                                style = TextStyle(shadow = textShadow),
+                                                fontFamily = fontFamily
+                                            )
                                         }
 
                                         AnimatedVisibility(
