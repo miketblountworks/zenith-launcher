@@ -119,58 +119,64 @@ fun AdvancedSearchBar(
                 .fillMaxWidth()
                 .height(56.dp)
                 .shadow(elevation = if (isSearchActive) 12.dp else 0.dp, shape = RoundedCornerShape(cornerRadius))
-                .border(1.dp, borderColor, RoundedCornerShape(100)),
-            shape = RoundedCornerShape(cornerRadius),
+                .border(1.dp, borderColor, RoundedCornerShape(28.dp)),
+            shape = RoundedCornerShape(28.dp),
             color = containerBackground
         ) {
-            Row(
-                modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                if (isSearchActive) {
-                    IconButton(onClick = { onQueryChange(""); focusManager.clearFocus(); onFocusChanged(false) }) {
-                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = placeholderHintColor, modifier = Modifier.size(20.dp))
-                    }
-                } else {
-                    Box(modifier = Modifier.padding(start = 12.dp, end = 8.dp).size(24.dp), contentAlignment = Alignment.Center) {
+            androidx.compose.material3.TextField(
+                value = query,
+                onValueChange = onQueryChange,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .onFocusChanged { onFocusChanged(it.isFocused) },
+                textStyle = TextStyle(fontFamily = fontFamily, fontSize = 16.sp, color = activeTextColor),
+                placeholder = {
+                    Text(
+                        text = "Search contacts, apps, web...",
+                        fontSize = 15.sp,
+                        fontFamily = fontFamily,
+                        color = placeholderHintColor.copy(alpha = 0.6f)
+                    )
+                },
+                leadingIcon = {
+                    if (isSearchActive) {
+                        IconButton(onClick = { onQueryChange(""); focusManager.clearFocus(); onFocusChanged(false) }) {
+                            Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = placeholderHintColor, modifier = Modifier.size(20.dp))
+                        }
+                    } else {
                         Icon(imageVector = Icons.Default.Search, contentDescription = "Search", tint = placeholderHintColor, modifier = Modifier.size(20.dp))
                     }
-                }
-
-                BasicTextField(
-                    value = query,
-                    onValueChange = onQueryChange,
-                    textStyle = TextStyle(fontFamily = fontFamily, fontSize = 15.sp, color = activeTextColor),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                    keyboardActions = KeyboardActions(onSearch = { onSearchExecute() }),
-                    modifier = Modifier.weight(1f).onFocusChanged { onFocusChanged(it.isFocused) },
-                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                    decorationBox = { innerTextField ->
-                        Box(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp, horizontal = 4.dp), contentAlignment = Alignment.CenterStart) {
-                            if (query.isEmpty()) {
-                                Text(text = "Search contacts, apps, web...", fontSize = 14.sp, fontFamily = fontFamily, color = placeholderHintColor.copy(alpha = 0.6f))
-                            }
-                            innerTextField()
+                },
+                trailingIcon = {
+                    if (query.isNotEmpty()) {
+                        IconButton(onClick = { onQueryChange("") }) {
+                            Icon(imageVector = Icons.Default.Close, contentDescription = "Clear", tint = placeholderHintColor, modifier = Modifier.size(20.dp))
+                        }
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .padding(end = 8.dp)
+                                .size(32.dp)
+                                .background(color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), shape = CircleShape)
+                                .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(text = "MT", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, fontFamily = fontFamily)
                         }
                     }
+                },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(onSearch = { onSearchExecute() }),
+                colors = androidx.compose.material3.TextFieldDefaults.colors(
+                    focusedContainerColor = Color.Transparent,
+                    unfocusedContainerColor = Color.Transparent,
+                    disabledContainerColor = Color.Transparent,
+                    cursorColor = MaterialTheme.colorScheme.primary,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
                 )
-
-                if (query.isNotEmpty()) {
-                    IconButton(onClick = { onQueryChange("") }) {
-                        Icon(imageVector = Icons.Default.Close, contentDescription = "Clear", tint = placeholderHintColor, modifier = Modifier.size(20.dp))
-                    }
-                } else {
-                    Box(
-                        modifier = Modifier.padding(end = 8.dp).size(32.dp)
-                            .background(color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), shape = CircleShape)
-                            .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f), CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(text = "MT", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, fontFamily = fontFamily)
-                    }
-                }
-            }
+            )
         }
     }
 }

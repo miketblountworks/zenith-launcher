@@ -998,55 +998,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                         bottom = 140.dp + WindowInsets.ime.getBottom(density).let { with(density) { it.toDp() } }
                                     )
                                 ) {
-                                    if (searchQuery.isEmpty()) {
-                                        item {
-                                            Column(
-                                                modifier = Modifier
-                                                    .fillParentMaxSize()
-                                                    .padding(24.dp),
-                                                verticalArrangement = Arrangement.Center,
-                                                horizontalAlignment = Alignment.CenterHorizontally
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Search,
-                                                    contentDescription = null,
-                                                    tint = currentThemeColor.copy(alpha = 0.5f),
-                                                    modifier = Modifier.size(56.dp)
-                                                )
-                                                Spacer(modifier = Modifier.height(16.dp))
-                                                Text(
-                                                    text = "Unified Search Engine",
-                                                    fontSize = 18.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = Color.White,
-                                                    fontFamily = currentFontFamily,
-                                                    style = TextStyle(
-                                                        shadow = Shadow(
-                                                            color = Color.Black.copy(alpha = 0.6f),
-                                                            offset = Offset(2f, 2f),
-                                                            blurRadius = 6f
-                                                        )
-                                                    )
-                                                )
-                                                Spacer(modifier = Modifier.height(6.dp))
-                                                Text(
-                                                    text = "Type below to browse on-device contacts, installed apps, system settings, files, or query the web in real-time.",
-                                                    fontSize = 14.sp,
-                                                    color = Color.White.copy(alpha = 0.8f),
-                                                    textAlign = TextAlign.Center,
-                                                    fontFamily = currentFontFamily,
-                                                    modifier = Modifier.padding(horizontal = 24.dp),
-                                                    style = TextStyle(
-                                                        shadow = Shadow(
-                                                            color = Color.Black.copy(alpha = 0.6f),
-                                                            offset = Offset(1f, 1f),
-                                                            blurRadius = 4f
-                                                        )
-                                                    )
-                                                )
-                                            }
-                                        }
-                                    } else {
+                                    if (searchQuery.isNotEmpty()) {
                                         if (displayedResults.isNotEmpty()) {
                                             items(
                                                 count = if (isInfiniteScroll) Int.MAX_VALUE else displayedResults.size,
@@ -2016,6 +1968,30 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                 .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                // Unified Search Engine Explanatory Text
+                if (searchQuery.isEmpty() && isSearchFocused) {
+                    Column(
+                        modifier = Modifier.padding(bottom = 24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "Unified Search Engine",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = Color.White,
+                            fontFamily = currentFontFamily
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Type below to browse on-device contacts, installed apps, system settings, files, or query the web in real-time.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.White.copy(alpha = 0.8f),
+                            textAlign = TextAlign.Center,
+                            fontFamily = currentFontFamily,
+                            modifier = Modifier.padding(horizontal = 32.dp)
+                        )
+                    }
+                }
+
                 // CATEGORY FILTER CHIPS
                 if (searchQuery.isNotEmpty() || isSearchFocused) {
                     androidx.compose.foundation.lazy.LazyRow(
