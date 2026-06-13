@@ -281,6 +281,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
     var hoveredApp by remember { mutableStateOf<AppInfo?>(null) }
     var highlightedApp by remember { mutableStateOf<AppInfo?>(null) }
     var isNotificationsExpanded by remember { mutableStateOf(false) }
+    var isQuickScrolling by remember { mutableStateOf(false) }
 
     val activeEditId by activity._longPressedWidgetId.collectAsState()
     
@@ -1722,12 +1723,17 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                 alphabetListState.firstVisibleItemIndex > 0 || alphabetListState.firstVisibleItemScrollOffset > 0
                                             }
                                         }
+                                        val scrollbarBottomPadding by animateDpAsState(
+                                            targetValue = if (isQuickScrolling) 16.dp else 140.dp,
+                                            animationSpec = tween(300),
+                                            label = "scrollbar_padding"
+                                        )
                                         Box(
                                             modifier = Modifier
                                                 .fillMaxHeight(0.85f)
                                                 .align(Alignment.CenterVertically)
                                                 .width(48.dp)
-                                                .padding(bottom = 120.dp)
+                                                .padding(bottom = scrollbarBottomPadding)
                                                 .drawWithContent {
                                                     drawContent()
                                                     drawRect(
@@ -1742,14 +1748,43 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                                 }
                                                 .pointerInput(letters) {
                                                     detectVerticalDragGestures(
-                                                        onDragStart = { isTouchingSidebar = true },
-                                                        onDragEnd = { isTouchingSidebar = false },
-                                                        onDragCancel = { isTouchingSidebar = false },
+                                                        onDragStart = { 
+                                                            isTouchingSidebar = true
+                                                            isQuickScrolling = true
+                                                        },
+                                                        onDragEnd = { 
+                                                            isTouchingSidebar = false
+                                                            isQuickScrolling = false
+                                                        },
+                                                        onDragCancel = { 
+                                                            isTouchingSidebar = false
+                                                            isQuickScrolling = false
+                                                        },
                                                         onVerticalDrag = { change, _ ->
                                                             change.consume()
                                                             val totalHeight = size.height.toFloat()
                                                             val currentY = change.position.y.coerceIn(0f, totalHeight)
-                                                            dragProgressState.value = currentY / totalHeight
+                                                            val progress = currentY / totalHeight
+                                                            dragProgressState.value = progress
+                                                            
+                                                            val letterIndex = (progress * letters.size).toInt().coerceIn(0, letters.size - 1)
+                                                            val selectedLetter = letters[letterIndex]
+                                                            
+                                                            val listToSearch = if (categoriseByUsageVal && searchQuery.isEmpty()) restAppsEntries else standardListEntries
+                                                            val targetEntryIndex = listToSearch.indexOfFirst { entry ->
+                                                                entry is ListEntry.Header && entry.letter == selectedLetter
+                                                            }
+                                                            
+                                                            if (targetEntryIndex != -1) {
+                                                                val finalIndex = if (categoriseByUsageVal && searchQuery.isEmpty()) {
+                                                                    topNApps.size + 2 + targetEntryIndex
+                                                                } else {
+                                                                    targetEntryIndex
+                                                                }
+                                                                coroutineScope.launch {
+                                                                    listState.scrollToItem(finalIndex)
+                                                                }
+                                                            }
                                                         }
                                                     )
                                                 }
@@ -2246,7 +2281,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
 
         // Global Floating Search Bar
         androidx.compose.animation.AnimatedVisibility(
-            visible = !isNotificationsExpanded && !isLaunchingAppVal && !isClosingAppVal,
+            visible = !isNotificationsExpanded && !isLaunchingAppVal && !isClosingAppVal && !isQuickScrolling,
             enter = fadeIn() + slideInVertically(initialOffsetY = { it / 2 }),
             exit = fadeOut() + slideOutVertically(targetOffsetY = { it / 2 }),
             modifier = Modifier
