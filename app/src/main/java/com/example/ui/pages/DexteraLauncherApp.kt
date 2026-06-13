@@ -60,11 +60,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.automirrored.filled.Message
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.HourglassEmpty
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Message
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
@@ -118,6 +120,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.edit
 import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.example.MainActivity
 import com.example.SearchResult
 import com.example.UniversalSearchEngine
@@ -2436,6 +2439,15 @@ fun SearchResultItem(
         }
         is SearchResult.ContactResult -> {
             val initials = result.label.split(" ").mapNotNull { it.firstOrNull() }.joinToString("").uppercase().take(2)
+            val iconModifier = Modifier
+                .size(28.dp)
+                .shadow(
+                    elevation = 4.dp,
+                    shape = CircleShape,
+                    ambientColor = Color.Black,
+                    spotColor = Color.Black
+                )
+            
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -2467,44 +2479,36 @@ fun SearchResultItem(
                     .padding(vertical = 8.dp, horizontal = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                // 1. Avatar/Photo
                 Box(
                     modifier = Modifier
                         .size(36.dp)
-                        .background(currentThemeColor.copy(alpha = 0.2f), CircleShape)
+                        .clip(CircleShape)
+                        .background(currentThemeColor.copy(alpha = 0.2f))
                         .border(1.dp, currentThemeColor.copy(alpha = 0.4f), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = if (initials.isNotEmpty()) initials else "👤",
-                        color = currentThemeColor,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp,
-                        fontFamily = currentFontFamily
-                    )
-                }
-                Spacer(modifier = Modifier.width(14.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = result.label,
-                        color = Color.White,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        fontFamily = currentFontFamily,
-                        style = TextStyle(
-                            shadow = Shadow(
-                                color = Color.Black.copy(alpha = 0.6f),
-                                offset = Offset(2f, 2f),
-                                blurRadius = 6f
-                            )
+                    if (result.photoUri != null) {
+                        AsyncImage(
+                            model = result.photoUri,
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize().clip(CircleShape),
+                            contentScale = androidx.compose.ui.layout.ContentScale.Crop
                         )
-                    )
-                    Text(
-                        text = "Contact • ${result.phoneNumber}",
-                        color = adaptiveTextMuted,
-                        fontSize = 11.sp,
-                        fontFamily = currentFontFamily
-                    )
+                    } else {
+                        Text(
+                            text = if (initials.isNotEmpty()) initials else "👤",
+                            color = currentThemeColor,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp,
+                            fontFamily = currentFontFamily
+                        )
+                    }
                 }
+                
+                Spacer(modifier = Modifier.width(12.dp))
+
+                // 2. Call Button
                 IconButton(
                     onClick = {
                         UniversalSearchEngine.recordSelection(context, result)
@@ -2515,13 +2519,74 @@ fun SearchResultItem(
                             onCloseSearch()
                         } catch (_: Exception) {}
                     },
-                    modifier = Modifier.size(28.dp)
+                    modifier = iconModifier
                 ) {
                     Icon(
                         imageVector = Icons.Default.Phone,
                         contentDescription = "Call Contact",
-                        tint = currentThemeColor,
+                        tint = Color.White,
                         modifier = Modifier.size(16.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                // 3. Message Button
+                IconButton(
+                    onClick = {
+                        UniversalSearchEngine.recordSelection(context, result)
+                        try {
+                            val intent = Intent(Intent.ACTION_VIEW, "sms:${result.phoneNumber}".toUri())
+                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            context.startActivity(intent)
+                            onCloseSearch()
+                        } catch (_: Exception) {}
+                    },
+                    modifier = iconModifier
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.Message,
+                        contentDescription = "Message Contact",
+                        tint = Color.White,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+
+                // 4. Spacer(Modifier.weight(1f))
+                Spacer(modifier = Modifier.weight(1f))
+
+                // 5. Contact Info Column (End aligned)
+                Column(
+                    horizontalAlignment = Alignment.End
+                ) {
+                    Text(
+                        text = result.label,
+                        color = Color.White,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        fontFamily = currentFontFamily,
+                        textAlign = TextAlign.End,
+                        style = TextStyle(
+                            shadow = Shadow(
+                                color = Color.Black.copy(alpha = 0.6f),
+                                offset = Offset(2f, 2f),
+                                blurRadius = 6f
+                            )
+                        )
+                    )
+                    Text(
+                        text = "Contact • ${result.phoneNumber}",
+                        color = Color.White.copy(alpha = 0.8f),
+                        fontSize = 11.sp,
+                        fontFamily = currentFontFamily,
+                        textAlign = TextAlign.End,
+                        style = TextStyle(
+                            shadow = Shadow(
+                                color = Color.Black.copy(alpha = 0.6f),
+                                offset = Offset(1f, 1f),
+                                blurRadius = 4f
+                            )
+                        )
                     )
                 }
             }

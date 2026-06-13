@@ -22,6 +22,7 @@ sealed class SearchResult {
         override val label: String,
         val phoneNumber: String,
         val isRoomUser: Boolean,
+        val photoUri: String?,
         override val score: Double
     ) : SearchResult()
 
@@ -193,7 +194,7 @@ object UnifiedSearchMetrics {
 
 data class SearchSetting(val label: String, val action: String)
 data class SearchFile(val id: Long, val name: String, val mimeType: String?, val fileSize: Long)
-data class RawContact(val id: String, val name: String, val phone: String, val isRoomUser: Boolean = false)
+data class RawContact(val id: String, val name: String, val phone: String, val photoUri: String? = null, val isRoomUser: Boolean = false)
 
 class CacheEntry<T>(val data: T, val timestamp: Long = System.currentTimeMillis()) {
     fun isExpired(maxAgeMs: Long): Boolean {
@@ -299,19 +300,22 @@ object UniversalSearchEngine {
                 val projection = arrayOf(
                     ContactsContract.CommonDataKinds.Phone.CONTACT_ID,
                     ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
-                    ContactsContract.CommonDataKinds.Phone.NUMBER
+                    ContactsContract.CommonDataKinds.Phone.NUMBER,
+                    ContactsContract.CommonDataKinds.Phone.PHOTO_THUMBNAIL_URI
                 )
                 context.contentResolver.query(uri, projection, null, null, null)?.use { cursor ->
                     val idCol = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.CONTACT_ID)
                     val nameCol = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
                     val numCol = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
+                    val photoCol = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.PHOTO_THUMBNAIL_URI)
 
                     while (cursor.moveToNext()) {
                         val id = if (idCol >= 0) cursor.getString(idCol) else ""
                         val name = if (nameCol >= 0) cursor.getString(nameCol) else ""
                         val number = if (numCol >= 0) cursor.getString(numCol) else ""
+                        val photoUri = if (photoCol >= 0) cursor.getString(photoCol) else null
                         if (id.isNotEmpty() && name.isNotEmpty()) {
-                            list.add(RawContact(id = id, name = name, phone = number, isRoomUser = false))
+                            list.add(RawContact(id = id, name = name, phone = number, photoUri = photoUri, isRoomUser = false))
                         }
                     }
                 }
@@ -400,6 +404,7 @@ object UniversalSearchEngine {
                     label = contact.name,
                     phoneNumber = contact.phone,
                     isRoomUser = contact.isRoomUser,
+                    photoUri = contact.photoUri,
                     score = score
                 )
             )
