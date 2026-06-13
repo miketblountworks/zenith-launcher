@@ -7,6 +7,7 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
@@ -87,6 +88,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -232,7 +234,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
     
     val hapticFeedback = LocalHapticFeedback.current
 
-    var searchBarOffset by remember { mutableFloatStateOf(0f) }
+    val searchBarOffset = remember { Animatable(0f) }
     val maxSearchBarOffset = with(density) { 150.dp.toPx() }
     val searchNestedScrollConnection = remember {
         object : androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
@@ -241,7 +243,9 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                 source: androidx.compose.ui.input.nestedscroll.NestedScrollSource
             ): Offset {
                 val delta = available.y
-                searchBarOffset = (searchBarOffset - delta).coerceIn(0f, maxSearchBarOffset)
+                coroutineScope.launch { 
+                    searchBarOffset.snapTo((searchBarOffset.value - delta).coerceIn(0f, maxSearchBarOffset))
+                }
                 return Offset.Zero
             }
         }
@@ -430,12 +434,6 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
     var isTouchingSidebar by remember { mutableStateOf(false) }
     var sidebarTouchY by remember { mutableStateOf<Float?>(null) }
     var sidebarTouchX by remember { mutableStateOf<Float?>(null) }
-
-    val animatedSearchBarOffset by animateFloatAsState(
-        targetValue = searchBarOffset,
-        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-        label = "animatedSearchBarOffset"
-    )
 
     LaunchedEffect(targetAlphabetIndex) {
         if (isTouchingSidebar) {
@@ -928,18 +926,34 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                 .fillMaxWidth()
                         ) {
                             if (searchQuery.isNotEmpty() || isSearchFocused) {
+                                val virtualSize = displayedResults.size + 1
                                 val searchListState = rememberLazyListState(
-                                    initialFirstVisibleItemIndex = if (displayedResults.isNotEmpty()) (Int.MAX_VALUE / 2) - ((Int.MAX_VALUE / 2) % displayedResults.size) else 0
+                                    initialFirstVisibleItemIndex = (Int.MAX_VALUE / 2) - ((Int.MAX_VALUE / 2) % virtualSize)
                                 )
                                 val searchFocusManager = LocalFocusManager.current
+                                val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+                                var lastLoop by remember { mutableIntStateOf((Int.MAX_VALUE / 2) / virtualSize) }
+
+                                LaunchedEffect(searchListState) {
+                                    snapshotFlow { searchListState.firstVisibleItemIndex }.collect { index ->
+                                        val currentLoop = index / virtualSize
+                                        if (currentLoop != lastLoop) {
+                                            haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                            lastLoop = currentLoop
+                                        }
+                                    }
+                                }
                                 
                                 BackHandler(enabled = true) {
                                     if (activeSearchCategoryFilter != "All") {
                                         activeSearchCategoryFilter = "All"
                                     } else {
-                                        searchQuery = ""
-                                        isSearchFocused = false
-                                        searchFocusManager.clearFocus()
+                                        coroutineScope.launch {
+                                            searchBarOffset.animateTo(targetValue = 0f, animationSpec = tween(300))
+                                            searchQuery = ""
+                                            isSearchFocused = false
+                                            searchFocusManager.clearFocus()
+                                        }
                                     }
                                 }
 
@@ -1027,45 +1041,49 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                                             }
                                         }
                                     } else {
-                                        val totalItems = displayedResults.size
-                                        if (totalItems > 0) {
+                                        val virtualSize = displayedResults.size + 1
+                                        if (displayedResults.isNotEmpty()) {
                                             items(
                                                 count = Int.MAX_VALUE,
                                                 key = { index ->
-                                                    val actualIndex = index % totalItems
-                                                    val res = displayedResults[actualIndex]
-                                                    "${res.id}_$index"
+                                                    val actualIndex = index % virtualSize
+                                                    if (actualIndex == displayedResults.size) "spacer_$index"
+                                                    else "${displayedResults[actualIndex].id}_$index"
                                                 }
                                             ) { index ->
-                                                val actualIndex = index % totalItems
-                                                val result = displayedResults[actualIndex]
-                                                
-                                                SearchResultItem(
-                                                    result = result,
-                                                    currentThemeColor = currentThemeColor,
-                                                    currentFontFamily = currentFontFamily,
-                                                    adaptiveTextColor = adaptiveTextColor,
-                                                    adaptiveTextMuted = adaptiveTextMuted,
-                                                    iconPackVal = iconPackVal,
-                                                    iconThemeColor = iconThemeColor,
-                                                    uiState = uiState,
-                                                    limitedAppsSet = limitedAppsSet,
-                                                    allUsersVal = allUsersVal,
-                                                    context = contextForSearch,
-                                                    activity = activity,
-                                                    onAppLongPress = { focusedContextMenuApp = it },
-                                                    onAppLimited = { activeBreakerApp = it },
-                                                    onSettingsCategorySelect = { 
-                                                        activeSettingsCategory = it
-                                                        showSettingsPanel = true
-                                                    },
-                                                    onUserSelect = { selectedUser = it },
-                                                    onCloseSearch = {
-                                                        searchQuery = ""
-                                                        isSearchFocused = false
-                                                        searchFocusManager.clearFocus()
-                                                    }
-                                                )
+                                                val actualIndex = index % virtualSize
+                                                if (actualIndex == displayedResults.size) {
+                                                    Spacer(modifier = Modifier.height(80.dp))
+                                                } else {
+                                                    val result = displayedResults[actualIndex]
+                                                    
+                                                    SearchResultItem(
+                                                        result = result,
+                                                        currentThemeColor = currentThemeColor,
+                                                        currentFontFamily = currentFontFamily,
+                                                        adaptiveTextColor = adaptiveTextColor,
+                                                        adaptiveTextMuted = adaptiveTextMuted,
+                                                        iconPackVal = iconPackVal,
+                                                        iconThemeColor = iconThemeColor,
+                                                        uiState = uiState,
+                                                        limitedAppsSet = limitedAppsSet,
+                                                        allUsersVal = allUsersVal,
+                                                        context = contextForSearch,
+                                                        activity = activity,
+                                                        onAppLongPress = { focusedContextMenuApp = it },
+                                                        onAppLimited = { activeBreakerApp = it },
+                                                        onSettingsCategorySelect = { 
+                                                            activeSettingsCategory = it
+                                                            showSettingsPanel = true
+                                                        },
+                                                        onUserSelect = { selectedUser = it },
+                                                        onCloseSearch = {
+                                                            searchQuery = ""
+                                                            isSearchFocused = false
+                                                            searchFocusManager.clearFocus()
+                                                        }
+                                                    )
+                                                }
                                             }
                                         }
                                     }
@@ -1983,7 +2001,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .offset { IntOffset(0, animatedSearchBarOffset.roundToInt()) }
+                .offset { IntOffset(0, searchBarOffset.value.roundToInt()) }
                 .navigationBarsPadding()
                 .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
         ) {
