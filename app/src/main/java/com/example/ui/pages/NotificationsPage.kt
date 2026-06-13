@@ -499,7 +499,7 @@ fun NotificationsPage(
                                 isPopupMode = true,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(bottom = 100.dp, start = 12.dp, end = 12.dp)
+                                    .padding(bottom = 140.dp, start = 12.dp, end = 12.dp)
                                     .shadow(elevation = 16.dp, shape = RoundedCornerShape(28.dp))
                             )
                         }
