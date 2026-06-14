@@ -54,6 +54,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -471,6 +473,7 @@ fun NotificationItemCard(
     var activeReplyActionIndex by remember { mutableIntStateOf(-1) }
     var replyText by remember { mutableStateOf("") }
     var hasTextOverflow by remember { mutableStateOf(false) }
+    val focusRequester = remember { FocusRequester() }
 
     Box(
         modifier = modifier
@@ -669,6 +672,12 @@ fun NotificationItemCard(
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                     if (isReply) {
                                         activeReplyActionIndex = if (activeReplyActionIndex == index) -1 else index
+                                        if (activeReplyActionIndex != -1) {
+                                            scope.launch {
+                                                kotlinx.coroutines.delay(100)
+                                                focusRequester.requestFocus()
+                                            }
+                                        }
                                     } else {
                                         try {
                                             action.actionIntent?.send()
@@ -705,6 +714,7 @@ fun NotificationItemCard(
                             modifier = Modifier
                                 .weight(1f)
                                 .heightIn(min = 44.dp)
+                                .focusRequester(focusRequester)
                                 .background(
                                     MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                                     RoundedCornerShape(22.dp)

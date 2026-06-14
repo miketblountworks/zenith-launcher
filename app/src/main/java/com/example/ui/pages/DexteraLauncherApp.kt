@@ -35,11 +35,13 @@ import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -66,7 +68,6 @@ import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.HourglassEmpty
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Message
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
@@ -147,6 +148,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewModel = viewModel()) {
     val context = LocalContext.current
@@ -156,7 +158,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
     val alphabetListState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
     val density = LocalDensity.current
-    val isImeVisible = WindowInsets.ime.getBottom(density) > 0
+    val isImeVisible = WindowInsets.isImeVisible
     
     val activity = remember(context) {
         var cur = context
@@ -1646,10 +1648,7 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                             }
                         }
                     }
-
-
                 }
-
             }
 
             AnimatedVisibility(
@@ -2059,128 +2058,137 @@ fun DexteraLauncherApp(modifier: Modifier = Modifier, viewModel: LauncherViewMod
                     }
                 }
 
-                AdvancedSearchBar(
-                query = searchQuery,
-                onQueryChange = {
-                    searchQuery = it
-                    activity.fetchWebSuggestions(it)
-                },
-                fontFamily = currentFontFamily,
-                onSearchWeb = { q ->
-                    try {
-                        val encodedQuery = java.net.URLEncoder.encode(q, "UTF-8")
-                        val uri = android.net.Uri.parse("https://www.google.com/search?q=$encodedQuery")
-                        val intent = Intent(Intent.ACTION_VIEW, uri)
-                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        context.startActivity(intent)
-                    } catch (e: Exception) {
-                        android.util.Log.e("DexteraSearch", "Failed to launch web search", e)
-                    }
-                },
-                isSearchFocused = isSearchFocused,
-                onFocusChanged = { isSearchFocused = it },
-                onSearchExecute = {
-                    val hasLocalMatch = displayedResults.any {
-                        it is SearchResult.AppResult ||
-                        it is SearchResult.ContactResult ||
-                        it is SearchResult.SettingResult ||
-                        it is SearchResult.FileResult
-                    }
-                    if (hasLocalMatch) {
-                        val topResult = displayedResults.firstOrNull { it !is SearchResult.WebResult } ?: displayedResults.firstOrNull()
-                        if (topResult != null) {
-                            UniversalSearchEngine.recordSelection(contextForSearch, topResult)
-                            when (topResult) {
-                                is SearchResult.ContactResult -> {
-                                    if (topResult.isRoomUser) {
-                                        val userId = topResult.id.removePrefix("room_").toIntOrNull()
-                                        val match = allUsersVal.find { it.id == userId }
-                                        if (match != null) {
-                                            selectedUser = match
-                                        } else {
-                                            try {
-                                                val intent = Intent(Intent.ACTION_DIAL, "tel:${topResult.phoneNumber}".toUri())
-                                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                                contextForSearch.startActivity(intent)
-                                            } catch (_: Exception) {}
-                                        }
-                                    } else {
-                                        try {
-                                            val intent = Intent(Intent.ACTION_DIAL, "tel:${topResult.phoneNumber}".toUri())
-                                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                            contextForSearch.startActivity(intent)
-                                        } catch (_: Exception) {}
-                                    }
-                                }
-                                is SearchResult.AppResult -> {
-                                    val isLimitedApp = topResult.packageName in limitedAppsSet
-                                    val appInfo = uiState.apps.find { it.packageName == topResult.packageName }
-                                    if (isLimitedApp && appInfo != null) {
-                                        activeBreakerApp = appInfo
-                                    } else {
-                                        activity.launchAppWithTracker(topResult.packageName)
-                                    }
-                                }
-                                is SearchResult.WebResult -> {
-                                    try {
-                                        val encodedQuery = java.net.URLEncoder.encode(topResult.label, "UTF-8")
-                                        val uri = android.net.Uri.parse("https://www.google.com/search?q=$encodedQuery")
-                                        val intent = Intent(Intent.ACTION_VIEW, uri)
-                                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                        contextForSearch.startActivity(intent)
-                                    } catch (e: Exception) {
-                                        android.util.Log.e("DexteraSearch", "Failed to launch web search", e)
-                                    }
-                                }
-                                is SearchResult.SettingResult -> {
-                                    if (topResult.action.startsWith("launcher_")) {
-                                        val cat = when (topResult.action) {
-                                            "launcher_perf" -> "Performance"
-                                            "launcher_gestures" -> "Gestures"
-                                            "launcher_permissions" -> "Permissions"
-                                            "launcher_search" -> "Search"
-                                            "launcher_pages" -> "Pages"
-                                            else -> null
-                                        }
-                                        activeSettingsCategory = cat
-                                        showSettingsPanel = true
-                                        focusManager.clearFocus()
-                                    } else {
-                                        try {
-                                            val intent = Intent(topResult.action)
-                                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                            contextForSearch.startActivity(intent)
-                                        } catch (_: Exception) {}
-                                    }
-                                }
-                                is SearchResult.FileResult -> {
-                                    Toast.makeText(contextForSearch, "Opening match: ${topResult.label}", Toast.LENGTH_SHORT).show()
-                                }
-                            }
-                            searchQuery = ""
-                            isSearchFocused = false
-                        }
-                    } else {
-                        val webSearchQuery = displayedResults.find { it is SearchResult.WebResult }?.label ?: searchQuery
-                        if (webSearchQuery.trim().isNotEmpty()) {
+                val isImeVisible = WindowInsets.isImeVisible
+                
+                AnimatedVisibility(
+                    visible = !isImeVisible,
+                    enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+                    exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
+                ) {
+                    AdvancedSearchBar(
+                        query = searchQuery,
+                        onQueryChange = {
+                            searchQuery = it
+                            activity.fetchWebSuggestions(it)
+                        },
+                        fontFamily = currentFontFamily,
+                        onSearchWeb = { q ->
                             try {
-                                val encodedQuery = java.net.URLEncoder.encode(webSearchQuery, "UTF-8")
+                                val encodedQuery = java.net.URLEncoder.encode(q, "UTF-8")
                                 val uri = android.net.Uri.parse("https://www.google.com/search?q=$encodedQuery")
                                 val intent = Intent(Intent.ACTION_VIEW, uri)
                                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                contextForSearch.startActivity(intent)
+                                context.startActivity(intent)
                             } catch (e: Exception) {
                                 android.util.Log.e("DexteraSearch", "Failed to launch web search", e)
                             }
+                        },
+                        isSearchFocused = isSearchFocused,
+                        onFocusChanged = { isSearchFocused = it },
+                        onSearchExecute = {
+                            val hasLocalMatch = displayedResults.any {
+                                it is SearchResult.AppResult ||
+                                it is SearchResult.ContactResult ||
+                                it is SearchResult.SettingResult ||
+                                it is SearchResult.FileResult
+                            }
+                            if (hasLocalMatch) {
+                                val topResult = displayedResults.firstOrNull { it !is SearchResult.WebResult } ?: displayedResults.firstOrNull()
+                                if (topResult != null) {
+                                    UniversalSearchEngine.recordSelection(contextForSearch, topResult)
+                                    when (topResult) {
+                                        is SearchResult.ContactResult -> {
+                                            if (topResult.isRoomUser) {
+                                                val userId = topResult.id.removePrefix("room_").toIntOrNull()
+                                                val match = allUsersVal.find { it.id == userId }
+                                                if (match != null) {
+                                                    selectedUser = match
+                                                } else {
+                                                    try {
+                                                        val intent = Intent(Intent.ACTION_DIAL, "tel:${topResult.phoneNumber}".toUri())
+                                                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                                        contextForSearch.startActivity(intent)
+                                                    } catch (_: Exception) {}
+                                                }
+                                            } else {
+                                                try {
+                                                    val intent = Intent(Intent.ACTION_DIAL, "tel:${topResult.phoneNumber}".toUri())
+                                                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                                    contextForSearch.startActivity(intent)
+                                                } catch (_: Exception) {}
+                                            }
+                                        }
+                                        is SearchResult.AppResult -> {
+                                            val isLimitedApp = topResult.packageName in limitedAppsSet
+                                            val appInfo = uiState.apps.find { it.packageName == topResult.packageName }
+                                            if (isLimitedApp && appInfo != null) {
+                                                activeBreakerApp = appInfo
+                                            } else {
+                                                activity.launchAppWithTracker(topResult.packageName)
+                                            }
+                                        }
+                                        is SearchResult.WebResult -> {
+                                            try {
+                                                val encodedQuery = java.net.URLEncoder.encode(topResult.label, "UTF-8")
+                                                val uri = android.net.Uri.parse("https://www.google.com/search?q=$encodedQuery")
+                                                val intent = Intent(Intent.ACTION_VIEW, uri)
+                                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                                contextForSearch.startActivity(intent)
+                                            } catch (e: Exception) {
+                                                android.util.Log.e("DexteraSearch", "Failed to launch web search", e)
+                                            }
+                                        }
+                                        is SearchResult.SettingResult -> {
+                                            if (topResult.action.startsWith("launcher_")) {
+                                                val cat = when (topResult.action) {
+                                                    "launcher_perf" -> "Performance"
+                                                    "launcher_gestures" -> "Gestures"
+                                                    "launcher_permissions" -> "Permissions"
+                                                    "launcher_search" -> "Search"
+                                                    "launcher_pages" -> "Pages"
+                                                    else -> null
+                                                }
+                                                activeSettingsCategory = cat
+                                                showSettingsPanel = true
+                                                focusManager.clearFocus()
+                                            } else {
+                                                try {
+                                                    val intent = Intent(topResult.action)
+                                                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                                    contextForSearch.startActivity(intent)
+                                                } catch (_: Exception) {}
+                                            }
+                                        }
+                                        is SearchResult.FileResult -> {
+                                            Toast.makeText(contextForSearch, "Opening match: ${topResult.label}", Toast.LENGTH_SHORT).show()
+                                        }
+                                        else -> {}
+                                    }
+                                    searchQuery = ""
+                                    focusManager.clearFocus()
+                                    isSearchFocused = false
+                                }
+                            } else if (searchQuery.isNotEmpty()) {
+                                // Fallback to web search if no local match
+                                try {
+                                    val encodedQuery = java.net.URLEncoder.encode(searchQuery, "UTF-8")
+                                    val uri =
+                                        android.net.Uri.parse("https://www.google.com/search?q=$encodedQuery")
+                                    val intent = Intent(Intent.ACTION_VIEW, uri)
+                                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {
+                                }
+                                searchQuery = ""
+                                focusManager.clearFocus()
+                                isSearchFocused = false
+                            }
                         }
-                        searchQuery = ""
-                        isSearchFocused = false
-                    }
+                    )
                 }
-            )
+            }
         }
     }
-}
 }
 
 @Composable
