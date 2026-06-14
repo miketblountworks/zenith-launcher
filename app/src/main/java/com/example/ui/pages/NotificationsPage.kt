@@ -64,6 +64,7 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.BlurredEdgeTreatment
@@ -263,6 +264,7 @@ fun NotificationsPage(
                                     themeColor = themeColor,
                                     fontFamily = fontFamily,
                                     activity = activity,
+                                    modifier = Modifier.animateItem(),
                                     onDismiss = {
                                         try {
                                             MyNotificationListenerService.instance?.cancelNotification(item.key)
@@ -296,7 +298,7 @@ fun NotificationsPage(
                                 )
                             } else {
                                 val isExpanded = expandedGroups[pkg] == true
-                                Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Column(modifier = Modifier.fillMaxWidth().animateItem(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                     if (!isExpanded) {
                                         GroupedNotificationStack(
                                             notifications = groupList,
@@ -315,10 +317,6 @@ fun NotificationsPage(
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .clickable {
-                                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                                    expandedGroups[pkg] = false
-                                                }
                                                 .padding(vertical = 8.dp, horizontal = 4.dp),
                                             horizontalArrangement = Arrangement.SpaceBetween,
                                             verticalAlignment = Alignment.CenterVertically
@@ -328,7 +326,14 @@ fun NotificationsPage(
                                                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                                     contentDescription = "Collapse",
                                                     tint = Color.White,
-                                                    modifier = Modifier.size(18.dp).graphicsLayer { rotationZ = 90f }
+                                                    modifier = Modifier
+                                                        .size(48.dp)
+                                                        .padding(15.dp)
+                                                        .clickable {
+                                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                            expandedGroups[pkg] = false
+                                                        }
+                                                        .graphicsLayer { rotationZ = 90f }
                                                 )
                                                 Spacer(modifier = Modifier.width(8.dp))
                                                 Text(
@@ -359,19 +364,21 @@ fun NotificationsPage(
                                         ) {
                                             Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                                                 groupList.forEach { item ->
-                                                    SwipeToDismissNotification(
-                                                        item = item,
-                                                        themeColor = themeColor,
-                                                        fontFamily = fontFamily,
-                                                        activity = activity,
-                                                        onDismiss = {
-                                                            try {
-                                                                MyNotificationListenerService.instance?.cancelNotification(item.key)
-                                                            } catch (_: Exception) {}
-                                                            val currentList = activity.notificationList.value.toMutableList()
-                                                            currentList.remove(item)
-                                                            activity.notificationList.value = currentList
-                                                        },
+                                                    key(item.key) {
+                                                        SwipeToDismissNotification(
+                                                            item = item,
+                                                            themeColor = themeColor,
+                                                            fontFamily = fontFamily,
+                                                            activity = activity,
+                                                            modifier = Modifier.animateItem(),
+                                                            onDismiss = {
+                                                                try {
+                                                                    MyNotificationListenerService.instance?.cancelNotification(item.key)
+                                                                } catch (_: Exception) {}
+                                                                val currentList = activity.notificationList.value.toMutableList()
+                                                                currentList.remove(item)
+                                                                activity.notificationList.value = currentList
+                                                            },
                                                         onNotificationClick = {
                                                             expandedNotification = item
                                                         },
@@ -507,4 +514,5 @@ fun NotificationsPage(
             }
         }
     }
+}
 }

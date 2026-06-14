@@ -348,6 +348,15 @@ fun GroupedNotificationStack(
                     onNotificationClick = {
                         if (isTopCard) {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            // Optional: Open the app on row click even when grouped? 
+                            // The user said "expand exclusively on icon", but didn't say row click should do nothing.
+                            // However, let's follow "exclusively" strictly if that's what's meant.
+                            // For now, let's leave onNotificationClick empty for grouped headers to ensure "exclusive" expansion.
+                        }
+                    },
+                    onIconClick = {
+                        if (isTopCard) {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             onExpandedClick(pkg)
                         }
                     },
@@ -411,7 +420,8 @@ fun SwipeToDismissNotification(
     onLongPress: (() -> Unit)? = null,
     onExpand: () -> Unit = {},
     onActionClicked: () -> Unit = {},
-    isPopupMode: Boolean = false
+    isPopupMode: Boolean = false,
+    onIconClick: (() -> Unit)? = null
 ) {
     NotificationItemCard(
         item = item,
@@ -424,7 +434,8 @@ fun SwipeToDismissNotification(
         onLongPress = onLongPress,
         onExpand = onExpand,
         onActionClicked = onActionClicked,
-        isPopupMode = isPopupMode
+        isPopupMode = isPopupMode,
+        onIconClick = onIconClick
     )
 }
 
@@ -440,7 +451,8 @@ fun NotificationItemCard(
     onLongPress: (() -> Unit)? = null,
     onExpand: () -> Unit = {},
     onActionClicked: () -> Unit = {},
-    isPopupMode: Boolean = false
+    isPopupMode: Boolean = false,
+    onIconClick: (() -> Unit)? = null
 ) {
     val haptic = LocalHapticFeedback.current
     val density = LocalDensity.current
@@ -544,7 +556,7 @@ fun NotificationItemCard(
                                 onLongPress?.invoke()
                             },
                             onTap = {
-                                if (offsetX.value == 0f) {
+                                if (offsetX.value == 0f && onIconClick == null) {
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                     onNotificationClick()
                                 }
@@ -553,28 +565,44 @@ fun NotificationItemCard(
                     },
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Circular App Icon
+                // Circular App Icon with enlarged touch target
                 Box(
                     modifier = Modifier
-                        .size(42.dp)
+                        .size(48.dp)
                         .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                        .then(
+                            if (onIconClick != null) {
+                                Modifier.clickable {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    onIconClick()
+                                }
+                            } else Modifier
+                        )
+                        .padding(3.dp), // Visual icon at ~42dp
                     contentAlignment = Alignment.Center
                 ) {
-                    if (appIconDrawable != null) {
-                        androidx.compose.foundation.Image(
-                            painter = rememberAsyncImagePainter(appIconDrawable),
-                            contentDescription = "${item.appName} Icon",
-                            modifier = Modifier.fillMaxSize().padding(6.dp)
-                        )
-                    } else {
-                        Text(
-                            text = item.appName.firstOrNull()?.uppercase() ?: "",
-                            color = MaterialTheme.colorScheme.onSurface,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 18.sp,
-                            fontFamily = fontFamily
-                        )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (appIconDrawable != null) {
+                            androidx.compose.foundation.Image(
+                                painter = rememberAsyncImagePainter(appIconDrawable),
+                                contentDescription = "${item.appName} Icon",
+                                modifier = Modifier.fillMaxSize().padding(6.dp)
+                            )
+                        } else {
+                            Text(
+                                text = item.appName.firstOrNull()?.uppercase() ?: "",
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp,
+                                fontFamily = fontFamily
+                            )
+                        }
                     }
                 }
                 
