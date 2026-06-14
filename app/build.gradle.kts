@@ -12,21 +12,19 @@ android {
 
   defaultConfig {
     applicationId = "com.aistudio.dexteralauncher.xtqmz"
-    // packageName = "com.aistudio.dexteralauncher.xtqmz"
-    // versionNumber = 2
     minSdk = 24
     targetSdk = 36
     versionCode = 3
     versionName = "3.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
     // Guarantee the field exists for compilation in all environments (secrets plugin will provide real value when .env present)
     buildConfigField("String", "GEMINI_API_KEY", "\"MY_GEMINI_API_KEY\"")
   }
 
   signingConfigs {
     create("release") {
+
       val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks"
       storeFile = file(keystorePath)
       storePassword = System.getenv("STORE_PASSWORD")

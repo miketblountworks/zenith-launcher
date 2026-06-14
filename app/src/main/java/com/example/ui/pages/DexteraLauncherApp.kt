@@ -135,6 +135,8 @@ import com.example.ui.components.AppRow
 import com.example.ui.components.CategoryHeader
 import com.example.ui.components.ClockStyleWidget
 import com.example.ui.components.FolderExpandCard
+import com.example.ui.components.GenerativeAvatar
+import com.example.ui.components.MediaTransportControls
 import com.example.ui.components.StyledAppIcon
 import com.example.ui.components.UsageBreakerOverlay
 import com.example.ui.components.UserProfileScreen
@@ -2441,7 +2443,6 @@ fun SearchResultItem(
             }
         }
         is SearchResult.ContactResult -> {
-            val initials = result.label.split(" ").mapNotNull { it.firstOrNull() }.joinToString("").uppercase().take(2)
             val iconShadowModifier = Modifier.shadow(
                 elevation = 6.dp,
                 shape = CircleShape,
@@ -2578,12 +2579,9 @@ fun SearchResultItem(
                             contentScale = androidx.compose.ui.layout.ContentScale.Crop
                         )
                     } else {
-                        Text(
-                            text = if (initials.isNotEmpty()) initials else "👤",
-                            color = currentThemeColor,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp,
-                            fontFamily = currentFontFamily
+                        GenerativeAvatar(
+                            seedName = result.label,
+                            modifier = Modifier.fillMaxSize()
                         )
                     }
                 }
