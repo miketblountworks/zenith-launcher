@@ -5,6 +5,7 @@ import android.app.Notification
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -680,11 +681,20 @@ fun NotificationItemCard(
                                         }
                                     } else {
                                         try {
-                                            action.actionIntent?.send()
+                                            val options = if (Build.VERSION.SDK_INT >= 34) {
+                                                ActivityOptions.makeBasic().apply {
+                                                    setPendingIntentBackgroundActivityStartMode(ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED)
+                                                }
+                                            } else {
+                                                ActivityOptions.makeBasic()
+                                            }
+                                            action.actionIntent?.send(context, 0, null, null, null, null, options.toBundle())
                                             onActionClicked()
                                         } catch (e: android.app.PendingIntent.CanceledException) {
-                                            // ignore
-                                        } catch (_: Exception) {}
+                                            Log.e("NotificationAction", "Intent canceled", e)
+                                        } catch (e: Exception) {
+                                            Log.e("NotificationAction", "Failed to execute action", e)
+                                        }
                                     }
                                 }
                         )
@@ -758,13 +768,22 @@ fun NotificationItemCard(
                                     val fillInIntent = Intent()
                                     android.app.RemoteInput.addResultsToIntent(remoteInputs, fillInIntent, resultBundle)
                                     try {
-                                        action.actionIntent?.send(context, 0, fillInIntent)
+                                        val options = if (Build.VERSION.SDK_INT >= 34) {
+                                            ActivityOptions.makeBasic().apply {
+                                                setPendingIntentBackgroundActivityStartMode(ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED)
+                                            }
+                                        } else {
+                                            ActivityOptions.makeBasic()
+                                        }
+                                        action.actionIntent?.send(context, 0, fillInIntent, null, null, null, options.toBundle())
                                         replyText = ""
                                         activeReplyActionIndex = -1
                                         onActionClicked()
                                         onDismiss?.invoke()
+                                    } catch (e: android.app.PendingIntent.CanceledException) {
+                                        Log.e("NotificationAction", "Reply intent canceled", e)
                                     } catch (e: Exception) {
-                                        e.printStackTrace()
+                                        Log.e("NotificationAction", "Failed to send reply", e)
                                     }
                                 }
                             },

@@ -4,6 +4,7 @@ import android.app.ActivityOptions
 import android.app.Notification
 import android.content.Intent
 import android.os.Build
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutLinearInEasing
@@ -497,12 +498,13 @@ fun NotificationsPage(
                                             }
                                         }
                                     } catch (e: android.app.PendingIntent.CanceledException) {
+                                        Log.e("NotificationCenter", "Main intent canceled", e)
                                         val fallbackIntent = context.packageManager.getLaunchIntentForPackage(item.pkg)
                                         if (fallbackIntent != null) {
                                             context.startActivity(fallbackIntent)
                                         }
                                     } catch (e: Exception) {
-                                        e.printStackTrace()
+                                        Log.e("NotificationCenter", "Failed to open notification", e)
                                     }
                                     expandedNotification = null
                                 },
